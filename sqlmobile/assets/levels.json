@@ -1,0 +1,1010 @@
+{
+ "levels": [
+  {
+   "id": "academy",
+   "number": 1,
+   "kind": "lessons",
+   "writable": false,
+   "database": {
+    "seed": "seed.sql"
+   },
+   "personLookup": null,
+   "content": {
+    "en": {
+     "title": "The Academy",
+     "difficulty": "Beginner",
+     "eyebrow": "Level 1 · Beginner · Larkspur Falls Police Academy",
+     "stamp": "Training · Open",
+     "summary": "New to SQL? Start here. Short lessons explain one idea at a time, and each one checks your query for you. It ends with a small case to crack.",
+     "skills": [
+      "SELECT",
+      "WHERE",
+      "AND / OR",
+      "LIKE",
+      "NULL",
+      "ORDER BY",
+      "LIMIT",
+      "DISTINCT",
+      "COUNT"
+     ],
+     "intro": "Welcome, cadet. Before you're handed a real case, you'll learn to question a database. Every lesson explains one idea, gives you a task, and checks your result as soon as you run a query. Do them in order or jump around; nothing is locked.",
+     "startingQuery": "-- Write your query below, then press Run (or Ctrl+Enter).\n\n",
+     "tableNotes": {
+      "suspects": "Everyone questioned about recent crimes in Larkspur Falls. alibi is NULL when nobody has checked it yet."
+     },
+     "lessons": [
+      {
+       "id": "select-star",
+       "title": "Your first query",
+       "body": [
+        "A database keeps its data in **tables**. A table looks like a spreadsheet: every **row** is one thing (here, one suspect) and every **column** is one fact about it (name, age, hair colour…).",
+        "You ask a database for data by writing a query. The most important word in SQL is `SELECT`, which means \"show me\". `*` means \"every column\", and `FROM` says which table to read.",
+        {
+         "sql": "SELECT * FROM suspects;"
+        },
+        "The semicolon `;` ends the statement. SQL keywords are not case-sensitive (`select` works too), but writing them in capitals makes queries easier to read."
+       ],
+       "task": "Show every column of every row in the `suspects` table.",
+       "hint": "Copy the example exactly, then press Run (or Ctrl+Enter).",
+       "answer": "SELECT * FROM suspects;",
+       "check": {
+        "type": "rows",
+        "sql": "SELECT * FROM suspects"
+       }
+      },
+      {
+       "id": "columns",
+       "title": "Pick your columns",
+       "body": [
+        "You rarely need every column. Replace `*` with the column names you want, separated by commas. They come back in the order you list them.",
+        {
+         "sql": "SELECT name, age FROM suspects;"
+        },
+        "Not sure of a column name? Open the **Tables** tab. It lists every column in every table."
+       ],
+       "task": "Show only the `name` and `occupation` of every suspect, and no other columns.",
+       "hint": "Start from the example and swap `age` for `occupation`.",
+       "answer": "SELECT name, occupation FROM suspects;",
+       "check": {
+        "type": "rows",
+        "sql": "SELECT name, occupation FROM suspects",
+        "exactColumns": true
+       }
+      },
+      {
+       "id": "where-text",
+       "title": "Filter rows with WHERE",
+       "body": [
+        "`WHERE` keeps only the rows that match a condition. It goes after `FROM`.",
+        {
+         "sql": "SELECT name, neighborhood\nFROM suspects\nWHERE neighborhood = 'Harbor';"
+        },
+        "Text values go in **single quotes**: `'Harbor'`. The comparison is exact, so `'harbor'` (lower case) would find nothing. Numbers don't need quotes."
+       ],
+       "task": "Find every suspect who lives in **Riverside**. Show at least their name.",
+       "hint": "Use `WHERE neighborhood = 'Riverside'`.",
+       "answer": "SELECT name, neighborhood\nFROM suspects\nWHERE neighborhood = 'Riverside';",
+       "check": {
+        "type": "rows",
+        "sql": "SELECT name FROM suspects WHERE neighborhood = 'Riverside'"
+       }
+      },
+      {
+       "id": "where-numbers",
+       "title": "Compare numbers",
+       "body": [
+        "For numbers you can use more than `=`:",
+        {
+         "list": [
+          "`>` greater than, `<` less than",
+          "`>=` greater than or equal, `<=` less than or equal",
+          "`<>` (or `!=`) not equal"
+         ]
+        },
+        {
+         "sql": "SELECT name, age\nFROM suspects\nWHERE age < 25;"
+        }
+       ],
+       "task": "Find every suspect **taller than 185 cm**. Show their `name` and `height_cm`.",
+       "hint": "\"Taller than 185\" means strictly greater, so use `>` and not `>=`.",
+       "answer": "SELECT name, height_cm\nFROM suspects\nWHERE height_cm > 185;",
+       "check": {
+        "type": "rows",
+        "sql": "SELECT name, height_cm FROM suspects WHERE height_cm > 185"
+       }
+      },
+      {
+       "id": "and",
+       "title": "Combine conditions with AND",
+       "body": [
+        "`AND` joins two conditions, and a row is kept only if **both** are true. You can chain as many as you need.",
+        {
+         "sql": "SELECT name, hair, neighborhood\nFROM suspects\nWHERE hair = 'blond'\n  AND neighborhood = 'Hilltop';"
+        },
+        "Every extra `AND` makes the result smaller (or keeps it the same). That is how detectives narrow a long list down to one name."
+       ],
+       "task": "Find suspects with **red** hair who live in **Northside**.",
+       "hint": "Two conditions: `hair = 'red'` and `neighborhood = 'Northside'`.",
+       "answer": "SELECT name, hair, neighborhood\nFROM suspects\nWHERE hair = 'red'\n  AND neighborhood = 'Northside';",
+       "check": {
+        "type": "rows",
+        "sql": "SELECT name FROM suspects WHERE hair = 'red' AND neighborhood = 'Northside'"
+       }
+      },
+      {
+       "id": "or",
+       "title": "OR, IN and brackets",
+       "body": [
+        "`OR` keeps a row if **either** condition is true. When you mix `AND` and `OR`, SQL does the `AND` first, just as maths does × before +. Use brackets to say what you mean:",
+        {
+         "sql": "SELECT name, neighborhood, age\nFROM suspects\nWHERE (neighborhood = 'Harbor' OR neighborhood = 'Hilltop')\n  AND age > 50;"
+        },
+        "Try removing the brackets and running it again. The result changes, because now the query means \"everyone in Harbor, plus Hilltop people over 50\".",
+        "`IN` is a shortcut for several `OR`s on one column: `neighborhood IN ('Harbor', 'Hilltop')`."
+       ],
+       "task": "Find suspects who live in **Northside or Old Town** and are **under 30**.",
+       "hint": "Put the two neighbourhoods in brackets (or use IN), then add `AND age < 30`.",
+       "answer": "SELECT name, neighborhood, age\nFROM suspects\nWHERE neighborhood IN ('Northside', 'Old Town')\n  AND age < 30;",
+       "check": {
+        "type": "rows",
+        "sql": "SELECT name FROM suspects WHERE neighborhood IN ('Northside', 'Old Town') AND age < 30"
+       }
+      },
+      {
+       "id": "like",
+       "title": "Search text with LIKE",
+       "body": [
+        "`=` needs an exact match. `LIKE` matches a **pattern**, with two wildcards:",
+        {
+         "list": [
+          "`%` stands for any number of characters, including none",
+          "`_` stands for exactly one character"
+         ]
+        },
+        {
+         "sql": "SELECT name, vehicle\nFROM suspects\nWHERE vehicle LIKE '%van%';"
+        },
+        "`'%van%'` means \"van anywhere in the text\". `'van%'` would mean \"starts with van\". In SQLite, `LIKE` ignores upper and lower case."
+       ],
+       "task": "A witness saw \"something green\" drive away. Find every suspect whose `vehicle` is any kind of **green**.",
+       "hint": "Vehicles look like \"green hatchback\" or \"dark green van\". Put `%` on both sides.",
+       "answer": "SELECT name, vehicle\nFROM suspects\nWHERE vehicle LIKE '%green%';",
+       "check": {
+        "type": "rows",
+        "sql": "SELECT name FROM suspects WHERE vehicle LIKE '%green%'"
+       }
+      },
+      {
+       "id": "null",
+       "title": "Missing values: NULL",
+       "body": [
+        "Some cells are empty. SQL calls an empty value `NULL`, and it means \"unknown\", not zero and not an empty string. In this table, `alibi` is NULL when nobody has checked the suspect's alibi yet.",
+        "NULL is never equal to anything, not even to another NULL, so `alibi = NULL` finds **nothing**. Use `IS NULL` or `IS NOT NULL`:",
+        {
+         "sql": "SELECT name, alibi\nFROM suspects\nWHERE alibi IS NOT NULL;"
+        }
+       ],
+       "task": "Find every suspect who has **no alibi** on record.",
+       "hint": "Flip the example: `IS NULL` instead of `IS NOT NULL`.",
+       "answer": "SELECT name, alibi\nFROM suspects\nWHERE alibi IS NULL;",
+       "check": {
+        "type": "rows",
+        "sql": "SELECT name FROM suspects WHERE alibi IS NULL"
+       }
+      },
+      {
+       "id": "order-by",
+       "title": "Sort with ORDER BY",
+       "body": [
+        "Rows come back in no guaranteed order. `ORDER BY` sorts them. It goes after `WHERE`.",
+        {
+         "sql": "SELECT name, height_cm\nFROM suspects\nORDER BY height_cm;"
+        },
+        "The default is ascending (`ASC`), smallest first. Add `DESC` for descending. You can sort by several columns, too: `ORDER BY neighborhood, age DESC`."
+       ],
+       "task": "List every suspect's `name` and `age`, **oldest first**.",
+       "hint": "Oldest first means the biggest age first, so use `DESC`.",
+       "answer": "SELECT name, age\nFROM suspects\nORDER BY age DESC;",
+       "check": {
+        "type": "rows",
+        "sql": "SELECT name, age FROM suspects ORDER BY age DESC",
+        "ordered": true
+       }
+      },
+      {
+       "id": "limit",
+       "title": "Top results with LIMIT",
+       "body": [
+        "`LIMIT n` keeps only the first n rows. It always comes last. Together with `ORDER BY` it answers \"top 5\" or \"most recent 10\" questions.",
+        {
+         "sql": "SELECT name, age\nFROM suspects\nORDER BY age\nLIMIT 3;"
+        },
+        "That shows the three youngest suspects. Without `ORDER BY`, `LIMIT` just gives you whichever rows came first, which is rarely what you want."
+       ],
+       "task": "Show the **three tallest** suspects, tallest first.",
+       "hint": "Sort by `height_cm` descending, then `LIMIT 3`.",
+       "answer": "SELECT name, height_cm\nFROM suspects\nORDER BY height_cm DESC\nLIMIT 3;",
+       "check": {
+        "type": "rows",
+        "sql": "SELECT name FROM suspects ORDER BY height_cm DESC LIMIT 3",
+        "ordered": true
+       }
+      },
+      {
+       "id": "distinct",
+       "title": "Remove duplicates with DISTINCT",
+       "body": [
+        "`SELECT DISTINCT` drops repeated rows from the result, so each different value appears once.",
+        {
+         "sql": "SELECT DISTINCT hair\nFROM suspects;"
+        },
+        "With several columns, DISTINCT removes rows where **all** the selected columns repeat."
+       ],
+       "task": "List each `neighborhood` **once**, with no other columns.",
+       "hint": "Put `DISTINCT` right after `SELECT`.",
+       "answer": "SELECT DISTINCT neighborhood\nFROM suspects;",
+       "check": {
+        "type": "rows",
+        "sql": "SELECT DISTINCT neighborhood FROM suspects",
+        "exactColumns": true
+       }
+      },
+      {
+       "id": "count",
+       "title": "Count rows and name columns",
+       "body": [
+        "`COUNT(*)` counts rows instead of showing them. It works with `WHERE`, so you can count only the rows that match.",
+        "`AS` gives a result column a name of your choice, called an **alias**. Without one, the column is named after the expression, like `COUNT(*)`.",
+        {
+         "sql": "SELECT COUNT(*) AS redheads\nFROM suspects\nWHERE hair = 'red';"
+        }
+       ],
+       "task": "Count the suspects who have **no alibi**. Name the result column `no_alibi`.",
+       "hint": "Combine `COUNT(*) AS no_alibi` with the `IS NULL` filter from the NULL lesson.",
+       "answer": "SELECT COUNT(*) AS no_alibi\nFROM suspects\nWHERE alibi IS NULL;",
+       "check": {
+        "type": "rows",
+        "sql": "SELECT COUNT(*) AS no_alibi FROM suspects WHERE alibi IS NULL",
+        "exactColumns": true,
+        "columnNames": true
+       }
+      },
+      {
+       "id": "final",
+       "title": "Final exam: the bakery break-in",
+       "body": [
+        "Last night someone broke into Morrow Bakery and emptied the till. A dog walker saw the burglar run to a car and drive off. Here is the statement:",
+        {
+         "note": "\"Tall, definitely taller than 180. Bright red hair. The car was green, I'm sure of that much.\""
+        },
+        "Officers add one more fact: the burglar has **no alibi**.",
+        "You already know everything you need: `WHERE`, `AND`, comparisons, `LIKE` and `IS NULL`. Each clue on its own still leaves several people. Together they leave one."
+       ],
+       "task": "Write one query that returns **only the burglar**.",
+       "hint": "Four conditions joined with AND: height over 180, red hair, a vehicle LIKE green, and an alibi that IS NULL.",
+       "answer": "SELECT name, height_cm, hair, vehicle, alibi\nFROM suspects\nWHERE height_cm > 180\n  AND hair = 'red'\n  AND vehicle LIKE '%green%'\n  AND alibi IS NULL;",
+       "check": {
+        "type": "value",
+        "value": "Rory Calloway",
+        "message": "Your result needs to be just the burglar."
+       }
+      }
+     ],
+     "finale": {
+      "title": "Academy complete",
+      "body": "You can filter, sort, count and search a table. Level 2 puts you on a real case, where the clues are spread across six tables and you'll learn to connect them with JOIN."
+     }
+    }
+   },
+   "endings": {}
+  },
+  {
+   "id": "observatory",
+   "number": 2,
+   "kind": "case",
+   "writable": false,
+   "database": {
+    "seed": "seed.sql",
+    "overlays": {
+     "mn": [
+      "i18n/mn.sql"
+     ]
+    }
+   },
+   "personLookup": "SELECT name FROM people WHERE lower(trim(name)) = :name LIMIT 1;",
+   "content": {
+    "en": {
+     "title": "Midnight at the Observatory",
+     "difficulty": "Intermediate",
+     "eyebrow": "Level 2 · Intermediate · Case file 26-1017 · Halvorsen Ridge",
+     "stamp": "Homicide · Active",
+     "summary": "A researcher is found dead in an observatory dome. Follow witnesses through six linked tables and learn to connect them with JOIN.",
+     "skills": [
+      "JOIN",
+      "BETWEEN",
+      "LIKE",
+      "DISTINCT",
+      "ORDER BY",
+      "GROUP BY (bonus)"
+     ],
+     "accuseHeading": "Name the killer",
+     "accuseHelp": "Write the person's full name as it appears in `people`. Wrong guesses cost nothing.",
+     "solvedText": "Case closed. You named the killer.",
+     "notesPlaceholder": "e.g. Custodian saw someone leave at 23:51 with a long hard case…",
+     "bonusButton": "Show the bonus lead (GROUP BY)",
+     "startingQuery": "-- Welcome, detective. Press Run (or Ctrl+Enter).\n-- This lists every police report filed on the morning of the murder.\nSELECT *\nFROM crime_reports\nWHERE occurred_at LIKE '2026-10-17%'\nORDER BY occurred_at;\n",
+     "briefing": {
+      "premise": "Friday night, Halvorsen Ridge Observatory held its Autumn Star Party: a fundraising gala in the Main Hall, followed by a meteor watch on the Roof Deck. Shortly after midnight, a researcher was found dead inside the West Dome.",
+      "objective": "Find the police report, track down the witnesses, and follow the records until exactly one person fits all of the evidence. Then name them below.",
+      "facts": [
+       [
+        "Date",
+        "Early hours of Saturday, 17 October 2026"
+       ],
+       [
+        "Place",
+        "Halvorsen Ridge Observatory, West Dome"
+       ],
+       [
+        "Type",
+        "murder"
+       ]
+      ],
+      "conventions": [
+       "Times are local, 24-hour, stored as text like '2026-10-16 23:45'. Comparing them as text sorts correctly, so BETWEEN and < work.",
+       "Badge readers log both directions (in and out). Only staff and volunteers carry badges.",
+       "Event kiosk check-ins are reliable. Check-outs are optional, so a NULL check-out proves nothing by itself.",
+       "Each query runs on a fresh copy of the evidence. You cannot break anything."
+      ]
+     },
+     "tableNotes": {
+      "people": "Everyone connected to the case: staff, volunteers and visitors.",
+      "crime_reports": "Police reports from around Larkspur Falls.",
+      "interviews": "Statements taken after the murder. Join on person_id.",
+      "access_logs": "Badge-door scans. Direction is in or out.",
+      "equipment_loans": "Loan desk records. returned_at is NULL while an item is still out.",
+      "event_attendance": "Kiosk scans for observatory events."
+     },
+     "hints": [
+      {
+       "title": "Read the report closely",
+       "body": "The starting query finds three reports from 17 October. Narrow it to the murder with WHERE type = 'murder', then read the description. It describes two witnesses without giving full names."
+      },
+      {
+       "title": "Find the witnesses, then hear them out",
+       "body": "Search people with LIKE: one witness is the night custodian, the other a volunteer docent named Priya. Then JOIN interviews to people ON interviews.person_id = people.id to read what they saw.",
+       "sql": "SELECT p.name, p.occupation, i.transcript\nFROM interviews AS i\nJOIN people AS p ON p.id = i.person_id\nWHERE p.occupation LIKE '%custodian%'\n   OR p.name LIKE 'Priya%';"
+      },
+      {
+       "title": "Turn the sighting into filters",
+       "body": "The custodian gives you three filters. (1) Who badged into the West Dome around the argument and the time of death? (2) Who had a long hard case checked out at 23:51? (3) A red lanyard means staff, so not the Volunteer Program and not a Visitor. Query access_logs and equipment_loans separately and compare.",
+       "sql": "SELECT p.name, p.department, a.direction, a.accessed_at\nFROM access_logs AS a\nJOIN people AS p ON p.id = a.person_id\nWHERE a.location = 'West Dome'\n  AND a.accessed_at BETWEEN '2026-10-16 23:00' AND '2026-10-17 00:40'\nORDER BY a.accessed_at;"
+      },
+      {
+       "title": "Combine the evidence",
+       "body": "Join the loan records to the badge logs so that only someone matching every detail is left. Then corroborate: read that person's own interview, and check what the department chair and the loan desk technician told police.",
+       "sql": "SELECT DISTINCT p.name, p.department, l.item_name, l.returned_at\nFROM equipment_loans AS l\nJOIN people AS p      ON p.id = l.person_id\nJOIN access_logs AS a ON a.person_id = p.id\nWHERE l.item_name LIKE '%long hard case%'\n  AND l.borrowed_at <= '2026-10-16 23:51'\n  AND (l.returned_at IS NULL OR l.returned_at > '2026-10-16 23:51')\n  AND a.location = 'West Dome'\n  AND a.accessed_at BETWEEN '2026-10-16 23:40' AND '2026-10-16 23:55'\n  AND p.department NOT IN ('Volunteer Program', 'Visitor');"
+      }
+     ],
+     "bonusLead": {
+      "title": "Bonus lead: the door that kept beeping",
+      "body": "The custodian thought the same badge kept coming back to the West Dome. Can you count West Dome entries per person on the night of the 16th with GROUP BY, and keep only people who entered at least three times with HAVING?"
+     }
+    },
+    "mn": {
+     "title": "Ажиглалтын төвийн шөнө дунд",
+     "difficulty": "Дунд шат",
+     "eyebrow": "2-р түвшин · Дунд шат · Хэргийн дугаар 26-1017 · Халворсен Ридж",
+     "stamp": "Аллага · Шалгагдаж буй",
+     "summary": "Ажиглалтын төвийн бөмбөгөр дотроос судлаач нас барсан байдалтай олдов. Холбоотой зургаан хүснэгтээр гэрчүүдийг мөшгиж, JOIN ашиглаж сурна.",
+     "skills": [
+      "JOIN",
+      "BETWEEN",
+      "LIKE",
+      "DISTINCT",
+      "ORDER BY",
+      "GROUP BY (нэмэлт)"
+     ],
+     "accuseHeading": "Алуурчныг нэрлэх",
+     "accuseHelp": "`people` хүснэгтэд байгаа бүтэн нэрийг латин үсгээр бичнэ үү. Буруу таавал ямар ч хохиролгүй.",
+     "solvedText": "Хэрэг илэрлээ. Та алуурчныг зөв нэрлэлээ.",
+     "notesPlaceholder": "Жишээ нь: Үйлчлэгч 23:51-д урт хатуу хайрцагтай хүн гарахыг харсан…",
+     "bonusButton": "Нэмэлт сэжүүрийг харах (GROUP BY)",
+     "startingQuery": "-- Тавтай морил, мөрдөгч өө. «Асуулга ажиллуулах» товч (эсвэл Ctrl+Enter) дарна уу.\n-- Энэ асуулга аллага болсон өглөө бүртгэгдсэн бүх цагдаагийн мэдээллийг харуулна.\nSELECT *\nFROM crime_reports\nWHERE occurred_at LIKE '2026-10-17%'\nORDER BY occurred_at;\n",
+     "briefing": {
+      "premise": "Баасан гарагийн орой Халворсен Ридж ажиглалтын төвд «Намрын одны үдэшлэг» болсон: Их танхимд хандивын үдэшлэг, дараа нь дээврийн тавцан дээр солир ажиглалт. Шөнө дундаас хойш удалгүй Баруун бөмбөгөр дотроос нэгэн судлаач нас барсан байдалтай олдов.",
+      "objective": "Цагдаагийн мэдээллийг олж, гэрчүүдийг тодруулаад, бүх нотлох баримтад яг ганц хүн тохирох хүртэл бүртгэлүүдийг мөшгөөрэй. Дараа нь доор түүний нэрийг бичээрэй.",
+      "facts": [
+       [
+        "Огноо",
+        "2026 оны 10-р сарын 17, Бямба гарагийн шөнө"
+       ],
+       [
+        "Газар",
+        "Халворсен Ридж ажиглалтын төв, Баруун бөмбөгөр"
+       ],
+       [
+        "Төрөл",
+        "аллага"
+       ]
+      ],
+      "conventions": [
+       "Хүснэгт, баганын нэр SQL-ийн журмаар англиар байгаа ч доторх утгууд монголоор. Хүмүүсийн нэрийг латин үсгээр бичсэн.",
+       "Цагийг 24 цагийн форматаар '2026-10-16 23:45' гэх мэтээр текстээр хадгалсан. Текстээр харьцуулахад зөв эрэмбэлэгддэг тул BETWEEN, < зэргийг ашиглаж болно.",
+       "Хаалганы карт уншигч орсон, гарсан хоёр чиглэлийг хоёуланг нь бүртгэдэг (direction = 'орсон' эсвэл 'гарсан'). Зөвхөн ажилтан, сайн дурынхан карттай.",
+       "Арга хэмжээний киоскийн ирсэн цагийн бүртгэл найдвартай. Гарахдаа бүртгүүлэх нь заавал биш тул checked_out_at нь NULL байх нь дангаараа юуг ч нотлохгүй.",
+       "LIKE том, жижиг үсгийг ялгахгүй, кирилл үсэгт ч адилхан ажиллана.",
+       "Асуулга бүр нотлох баримтын шинэ хуулбар дээр ажилладаг. Та юуг ч эвдэхгүй."
+      ]
+     },
+     "tableNotes": {
+      "people": "Хэрэгт холбогдох бүх хүн: ажилтнууд, сайн дурынхан, зочид.",
+      "crime_reports": "Ларкспур Фоллс орчмын цагдаагийн мэдээллүүд.",
+      "interviews": "Аллагын дараа авсан мэдүүлгүүд. person_id-аар холбоно.",
+      "access_logs": "Картаар нэвтэрсэн бүртгэл. direction нь 'орсон' эсвэл 'гарсан'.",
+      "equipment_loans": "Тоног төхөөрөмж олгосон бүртгэл. Буцааж өгөөгүй бол returned_at нь NULL.",
+      "event_attendance": "Арга хэмжээний киоскийн бүртгэл."
+     },
+     "hints": [
+      {
+       "title": "Мэдээллийг анхааралтай унш",
+       "body": "Эхлэлийн асуулга 10-р сарын 17-ны гурван мэдээллийг харуулна. WHERE type = 'аллага' нэмж аллагын мэдээллийг ялгаад тайлбарыг нь уншаарай. Тэнд хоёр гэрчийг бүтэн нэрийг нь хэлэлгүйгээр дурдсан байгаа."
+      },
+      {
+       "title": "Гэрчүүдийг олоод мэдүүлгийг нь сонс",
+       "body": "people хүснэгтээс LIKE ашиглан хайгаарай: нэг гэрч нь шөнийн үйлчлэгч, нөгөө нь Priya нэртэй сайн дурын хөтөч. Дараа нь interviews-ийг people-тэй interviews.person_id = people.id нөхцөлөөр JOIN хийж, тэд юу харсныг уншаарай.",
+       "sql": "SELECT p.name, p.occupation, i.transcript\nFROM interviews AS i\nJOIN people AS p ON p.id = i.person_id\nWHERE p.occupation LIKE '%үйлчлэгч%'\n   OR p.name LIKE 'Priya%';"
+      },
+      {
+       "title": "Гэрчийн хэлснийг шүүлтүүр болго",
+       "body": "Үйлчлэгчийн мэдүүлгээс гурван шүүлтүүр гарна. (1) Маргаан болон нас барсан цагийн орчимд хэн Баруун бөмбөгөрт картаараа орсон бэ? (2) 23:51-д хэний гарт урт хатуу хайрцагтай тоног төхөөрөмж байсан бэ? (3) Улаан оосор нь ажилтан гэсэн үг, өөрөөр хэлбэл Сайн дурын хөтөлбөрийнх ч биш, Зочин ч биш. access_logs, equipment_loans хүснэгтүүдийг тус тусад нь шалгаад харьцуулаарай.",
+       "sql": "SELECT p.name, p.department, a.direction, a.accessed_at\nFROM access_logs AS a\nJOIN people AS p ON p.id = a.person_id\nWHERE a.location = 'Баруун бөмбөгөр'\n  AND a.accessed_at BETWEEN '2026-10-16 23:00' AND '2026-10-17 00:40'\nORDER BY a.accessed_at;"
+      },
+      {
+       "title": "Нотлох баримтуудыг нэгтгэ",
+       "body": "Олгосон тоног төхөөрөмжийн бүртгэлийг картын бүртгэлтэй JOIN хийж, бүх нөхцөлд тохирох хүнийг л үлдээ. Дараа нь нотол: тэр хүний өөрийнх нь мэдүүлгийг уншиж, тэнхимийн эрхлэгч болон олгох цэгийн техникч цагдаад юу хэлснийг шалгаарай.",
+       "sql": "SELECT DISTINCT p.name, p.department, l.item_name, l.returned_at\nFROM equipment_loans AS l\nJOIN people AS p      ON p.id = l.person_id\nJOIN access_logs AS a ON a.person_id = p.id\nWHERE l.item_name LIKE '%урт хатуу хайрцаг%'\n  AND l.borrowed_at <= '2026-10-16 23:51'\n  AND (l.returned_at IS NULL OR l.returned_at > '2026-10-16 23:51')\n  AND a.location = 'Баруун бөмбөгөр'\n  AND a.accessed_at BETWEEN '2026-10-16 23:40' AND '2026-10-16 23:55'\n  AND p.department NOT IN ('Сайн дурын хөтөлбөр', 'Зочин');"
+      }
+     ],
+     "bonusLead": {
+      "title": "Нэмэлт сэжүүр: зогсолтгүй дуугарсан хаалга",
+      "body": "Үйлчлэгч Баруун бөмбөгөрийн хаалгаар нэг л карт дахин дахин орж ирж байсан гэж бодсон. 16-ны шөнө хүн бүр Баруун бөмбөгөрт хэдэн удаа орсныг GROUP BY-аар тоолж, HAVING ашиглан дор хаяж гурван удаа орсон хүмүүсийг л үлдээж чадах уу?"
+     }
+    }
+   },
+   "endings": {
+    "en": {
+     "culprit": "Corin Ashdown",
+     "headline": "Corin Ashdown killed Dr. Imogen Varga.",
+     "motive": "Corin, a postdoc in Varga's group, had submitted her C/2026 K3 comet spectra to a journal under his own name. Varga discovered it, showed the department chair, and planned to file a misconduct complaint on Monday. That would have ended his career, and the only proof was the raw data on the external drive she carried everywhere.",
+     "chain": [
+      [
+       "The report",
+       "Varga died in the West Dome between 23:45 and 00:05. Her external drive was missing."
+      ],
+      [
+       "The witnesses",
+       "Priya heard a man tell Varga the paper was \"already submitted\" around 23:40. Ezra saw a red-lanyard figure with a long black case on the catwalk at 23:44 to 23:47. Tomas saw the same figure leave at 23:51."
+      ],
+      [
+       "Badge logs",
+       "Corin entered the West Dome three times that night, and the last visit ran from 23:38 to 23:51, covering the argument and the time of death."
+      ],
+      [
+       "Loan records",
+       "Corin borrowed a portable spectrograph in a long hard case at 22:55 and did not return it until 07:58 the next morning."
+      ],
+      [
+       "Staff only",
+       "His department is Astrophysics, so he wore a red staff lanyard. The other long-case holders were a volunteer (Noor) or nowhere near the dome (Felix)."
+      ],
+      [
+       "The lie",
+       "Corin told police he went \"straight up to the Roof Deck around 23:30\" and never went near the West Dome. His badge reached the Roof Deck at 23:57, and he scanned into the meteor watch at 23:58 to build an alibi."
+      ],
+      [
+       "The drive",
+       "The loan desk technician found the foam cut out of the returned spectrograph case: room for a hard drive. The department chair reported the drive missing that morning."
+      ]
+     ]
+    },
+    "mn": {
+     "culprit": "Corin Ashdown",
+     "headline": "Доктор Imogen Varga-г Corin Ashdown хөнөөсөн.",
+     "motive": "Varga-гийн бүлгийн докторын дараах судлаач Corin түүний C/2026 K3 сүүлт одны спектрийг өөрийн нэрээр сэтгүүлд илгээсэн байв. Varga үүнийг илрүүлж, тэнхимийн эрхлэгчид үзүүлээд, даваа гарагт ёс зүйн зөрчлийн гомдол гаргахаар төлөвлөж байсан. Энэ нь Corin-ий карьерыг дуусгах байсан бөгөөд цорын ганц баттай нотолгоо нь Varga-гийн хаа явсан газраа авч явдаг гадаад хатуу дискэнд байсан анхны өгөгдөл байв.",
+     "chain": [
+      [
+       "Мэдээлэл",
+       "Varga 23:45-аас 00:05-ын хооронд Баруун бөмбөгөрт нас барсан. Түүний гадаад хатуу диск алга болсон."
+      ],
+      [
+       "Гэрчүүд",
+       "Priya 23:40 орчимд нэг эрэгтэй хүн өгүүлэл «аль хэдийн илгээгдсэн» гэж хэлэхийг сонссон. Ezra 23:44-өөс 23:47-ийн хооронд дээд явган гүүр дээр урт хар хайрцагтай, улаан оосортой хүнийг харсан. Tomas тэр хүнийг 23:51-д гарахыг харсан."
+      ],
+      [
+       "Картын бүртгэл",
+       "Corin тэр шөнө Баруун бөмбөгөрт гурван удаа орсон. Сүүлийнх нь 23:38-аас 23:51 хүртэл үргэлжилж, маргаан болон нас барсан цагийг бүрэн хамарсан."
+      ],
+      [
+       "Олгосон тоног төхөөрөмж",
+       "Corin 22:55-д урт хатуу хайрцагтай зөөврийн спектрограф авч, маргааш өглөө нь 07:58-д л буцааж өгсөн."
+      ],
+      [
+       "Зөвхөн ажилтан",
+       "Тэр Астрофизикийн тэнхимийнх тул улаан оосор зүүдэг. Урт хайрцагтай бусад хүмүүсийн нэг нь сайн дурын ажилтан (Noor), нөгөө нь бөмбөгөрийн ойролцоо ч байгаагүй (Felix)."
+      ],
+      [
+       "Худал мэдүүлэг",
+       "Corin цагдаад «арван нэгэн хагас орчим шууд дээврийн тавцан руу гарсан», Баруун бөмбөгөрийн ойролцоо ч очоогүй гэж хэлсэн. Гэтэл картын бүртгэлээр тэр дээврийн тавцанд 23:57-д хүрч, алиби бүрдүүлэх гэж 23:58-д солир ажиглалтад бүртгүүлсэн."
+      ],
+      [
+       "Хатуу диск",
+       "Олгох цэгийн техникч буцаж ирсэн спектрографын хайрцагны хөөсөн доторлогоог хайчилсан байхыг олсон: хатуу диск багтах зай. Тэнхимийн эрхлэгч тэр өглөө дискийг алга болсон гэж мэдэгдсэн."
+      ]
+     ]
+    }
+   }
+  },
+  {
+   "id": "coldcase",
+   "number": 3,
+   "kind": "case",
+   "writable": false,
+   "database": {
+    "seed": "seed.sql"
+   },
+   "personLookup": "SELECT name FROM staff WHERE lower(trim(name)) = :name\nUNION ALL\nSELECT name FROM customers WHERE lower(trim(name)) = :name\nLIMIT 1;",
+   "content": {
+    "en": {
+     "title": "The Millrace Poisonings",
+     "difficulty": "Advanced queries",
+     "eyebrow": "Level 3 · Advanced queries · Cold case 26-0924 · Millrace Market Hall",
+     "stamp": "Cold case · Reopened",
+     "summary": "Five people poisoned in one month, and no arrest. Aggregate thousands of facts at once: GROUP BY, HAVING, subqueries, CTEs, window functions and LEFT JOIN.",
+     "skills": [
+      "GROUP BY",
+      "HAVING",
+      "subqueries",
+      "WITH (CTEs)",
+      "LEAD() OVER",
+      "LEFT JOIN … IS NULL",
+      "date functions"
+     ],
+     "accuseHeading": "Name the poisoner",
+     "accuseHelp": "Write the full name as it appears in `staff` or `customers`. Wrong guesses cost nothing.",
+     "solvedText": "Case closed. You named the poisoner.",
+     "notesPlaceholder": "e.g. Five thallium cases. Which stall did all five visit?",
+     "bonusButton": "Show the bonus lead (LEFT JOIN)",
+     "startingQuery": "-- Cold case 26-0924. Press Run (or Ctrl+Enter).\n-- Every illness the hospital reported in September 2026.\nSELECT *\nFROM illness_reports\nORDER BY onset_at;\n",
+     "briefing": {
+      "premise": "In September 2026, five people were admitted to Larkspur General with thallium poisoning. All of them survived. All of them use the loyalty app at Millrace Market Hall, where six food stalls share one ordering system. The investigation stalled, and the case went cold. The app records, shift logs and reviews have now been handed to you.",
+      "objective": "Find the one stall that served every patient just before they fell ill, then the one person behind its counter who could have poisoned all five. Then name them below.",
+      "facts": [
+       [
+        "When",
+        "1–25 September 2026"
+       ],
+       [
+        "Where",
+        "Millrace Market Hall, Larkspur Falls"
+       ],
+       [
+        "Type",
+        "poisoning (thallium), five victims"
+       ]
+      ],
+      "conventions": [
+       "Times are local, 24-hour text like '2026-09-04 09:12'. Text comparison sorts them correctly.",
+       "Doctors say thallium symptoms start 12 to 48 hours after it is swallowed. So count only orders placed in the 48 hours before onset_at.",
+       "datetime(onset_at, '-48 hours') shifts a time back by 48 hours. Its result has seconds added, but it still compares correctly with these times.",
+       "station_log only records when a stint starts. A stint lasts until that person's next row. The last row of a shift has station 'off'.",
+       "Each query runs on a fresh copy of the evidence. You cannot break anything."
+      ]
+     },
+     "tableNotes": {
+      "stalls": "The six food stalls in the hall.",
+      "staff": "Everyone who works a stall. stall_id says which one.",
+      "customers": "Loyalty app members. Every app order is in orders.",
+      "orders": "Every loyalty app order in September, one row per item.",
+      "station_log": "Start of each stint at a station. It ends when that person’s next row starts.",
+      "illness_reports": "Hospital reports about loyalty members.",
+      "reviews": "Ratings from 1 to 5 that customers posted in the app."
+     },
+     "hints": [
+      {
+       "title": "Start with the hospital",
+       "body": "Filter illness_reports to the thallium cases, then turn their customer_ids into names. A subquery is a query inside another query: WHERE id IN (SELECT …). Read the notes too. They tell you how the poison was given.",
+       "sql": "SELECT name\nFROM customers\nWHERE id IN (SELECT customer_id\n             FROM illness_reports\n             WHERE diagnosis = 'thallium poisoning');"
+      },
+      {
+       "title": "Find the stall that served all five",
+       "body": "WITH gives a subquery a name so you can reuse it, which is called a CTE. Join the patients to their orders from the 48 hours before onset, then GROUP BY stall. HAVING filters groups the way WHERE filters rows, so keep only stalls that served every patient. COUNT(DISTINCT …) stops a patient who ordered twice from counting twice.",
+       "sql": "WITH patients AS (\n  SELECT customer_id, onset_at\n  FROM illness_reports\n  WHERE diagnosis = 'thallium poisoning'\n)\nSELECT s.name, COUNT(DISTINCT o.customer_id) AS patients_served\nFROM patients AS p\nJOIN orders AS o ON o.customer_id = p.customer_id\nJOIN stalls AS s ON s.id = o.stall_id\nWHERE o.ordered_at BETWEEN datetime(p.onset_at, '-48 hours') AND p.onset_at\nGROUP BY s.id\nHAVING COUNT(DISTINCT o.customer_id) = (SELECT COUNT(*) FROM patients);"
+      },
+      {
+       "title": "Rebuild the shifts with a window function",
+       "body": "station_log only has start times. LEAD(started_at) OVER (PARTITION BY staff_id ORDER BY started_at) looks ahead to the same person's next row, which is when the stint ended. Join the five poisoned orders to the stints they fall inside, and count how many each person covered. Leave out the 'off' rows.",
+       "sql": "WITH stints AS (\n  SELECT staff_id, station, started_at,\n         LEAD(started_at) OVER (PARTITION BY staff_id ORDER BY started_at) AS ended_at\n  FROM station_log\n),\npoisoned AS (\n  SELECT o.id, o.ordered_at\n  FROM orders AS o\n  JOIN illness_reports AS i ON i.customer_id = o.customer_id\n  JOIN stalls AS s ON s.id = o.stall_id\n  WHERE i.diagnosis = 'thallium poisoning'\n    AND s.name = 'Ember & Oak Tea Bar'\n    AND o.ordered_at BETWEEN datetime(i.onset_at, '-48 hours') AND i.onset_at\n)\nSELECT st.name, st.role, COUNT(DISTINCT p.id) AS poisoned_orders_on_shift\nFROM poisoned AS p\nJOIN stints AS t ON p.ordered_at >= t.started_at AND p.ordered_at < t.ended_at\nJOIN staff AS st ON st.id = t.staff_id\nWHERE t.station <> 'off'\nGROUP BY st.id\nORDER BY poisoned_orders_on_shift DESC;"
+      },
+      {
+       "title": "Follow the tea",
+       "body": "The toxicology notes say the poison went into hot drinks. Change the last query so it only counts stints on the 'drinks' station. Keep only people who covered all five with HAVING. Then read the reviews the five patients posted for that stall to see why they were chosen.",
+       "sql": "WITH stints AS (\n  SELECT staff_id, station, started_at,\n         LEAD(started_at) OVER (PARTITION BY staff_id ORDER BY started_at) AS ended_at\n  FROM station_log\n),\npoisoned AS (\n  SELECT o.id, o.ordered_at\n  FROM orders AS o\n  JOIN illness_reports AS i ON i.customer_id = o.customer_id\n  JOIN stalls AS s ON s.id = o.stall_id\n  WHERE i.diagnosis = 'thallium poisoning'\n    AND s.name = 'Ember & Oak Tea Bar'\n    AND o.ordered_at BETWEEN datetime(i.onset_at, '-48 hours') AND i.onset_at\n)\nSELECT st.name, COUNT(DISTINCT p.id) AS drinks_made\nFROM poisoned AS p\nJOIN stints AS t ON p.ordered_at >= t.started_at AND p.ordered_at < t.ended_at\nJOIN staff AS st ON st.id = t.staff_id\nWHERE t.station = 'drinks'\nGROUP BY st.id\nHAVING COUNT(DISTINCT p.id) = (SELECT COUNT(*) FROM poisoned);"
+      }
+     ],
+     "bonusLead": {
+      "title": "Bonus lead: who is next?",
+      "body": "Every patient had left a 1-star review of the same stall. Who else left a 1-star review there but has NOT been poisoned yet? Use LEFT JOIN to illness_reports and keep the rows where the report IS NULL. Careful: put the diagnosis condition in the ON clause, not in WHERE. One person on the list did go to hospital, just not for thallium."
+     }
+    }
+   },
+   "endings": {
+    "en": {
+     "culprit": "Margo Ellery",
+     "headline": "Margo Ellery, owner of Ember & Oak, poisoned her own customers.",
+     "motive": "Ember & Oak was going under. A run of one-star reviews in August had cut its rating in half, and every review blamed the owner. Margo kept an old tin of thallium rat poison from her father's farm. She took her revenge one reviewer at a time, in the smoky chai and tea lattes she made herself.",
+     "chain": [
+      [
+       "The hospital",
+       "Five thallium cases in September. Toxicology says the poison is tasteless in hot drinks, and symptoms start 12 to 48 hours after it is swallowed."
+      ],
+      [
+       "The common stall",
+       "Only Ember & Oak Tea Bar served all five patients in the 48 hours before they fell ill. Copperline Coffee served four; Fern Ostrova last ordered there two weeks earlier."
+      ],
+      [
+       "The shifts",
+       "Rebuilding stints with LEAD() shows two people at Ember & Oak for all five poisoned orders: Margo Ellery and Dov Pereira."
+      ],
+      [
+       "The drinks station",
+       "All five poisoned orders were hot drinks. Margo was on the drinks station for every one of them. Dov was making drinks for only two."
+      ],
+      [
+       "The motive",
+       "All five patients had posted a one-star review of Ember & Oak, each one complaining about the owner, shortly before they were poisoned."
+      ],
+      [
+       "Next on the list",
+       "Two people had left one-star reviews and had not yet been poisoned: Beatrix Coyle and Hugo Varela. Hugo was in hospital in September, but for a peanut allergy, not thallium. Police warned them both before Margo struck again."
+      ]
+     ]
+    }
+   }
+  },
+  {
+   "id": "tampered",
+   "number": 4,
+   "kind": "lessons",
+   "writable": true,
+   "database": {
+    "seed": "seed.sql",
+    "template": true,
+    "extra": [
+     "tamper.sql"
+    ],
+    "backup": true
+   },
+   "personLookup": null,
+   "content": {
+    "en": {
+     "title": "Tampered Evidence",
+     "difficulty": "Database admin",
+     "eyebrow": "Level 4 · Database admin · Larkspur Falls City Archive",
+     "stamp": "Evidence integrity · Urgent",
+     "summary": "Someone edited the badge records after a burglary. You get write access: compare against last night's backup, find who did it, restore the data, then lock it down and back it up.",
+     "skills": [
+      "ATTACH",
+      "EXCEPT",
+      "anti-joins",
+      "transactions",
+      "INSERT … SELECT",
+      "triggers",
+      "indexes",
+      "views",
+      "VACUUM INTO",
+      "server concepts"
+     ],
+     "intro": "The 1897 town charter vanished from the City Archive's Records Vault on the night of 20 October. Before the police could copy the badge database, someone changed it. Your session has the live database, which you **can** write to, and the 01:00 backup, attached read-only as `backup`. Your changes stay between runs, and \"Reset database\" puts everything back to the tampered starting state.",
+     "startingQuery": "-- You have write access here. Changes stay until you press \"Reset database\".\n-- Start with mission 1, or explore:\nSELECT * FROM badge_scans ORDER BY scanned_at;\n",
+     "tableNotes": {
+      "employees": "Archive staff.",
+      "badge_scans": "Door scans. modified_at is set when the admin console edits or adds a row. Also attached as backup.badge_scans (01:00 copy).",
+      "admin_sessions": "Who was signed in to the admin console, and when."
+     },
+     "lessons": [
+      {
+       "id": "attach",
+       "title": "Two copies of the truth",
+       "body": [
+        "Someone changed the archive's badge records after the burglary. Luckily, the server takes a backup every night at 01:00. The backup is **attached** to your session under the name `backup`. That means one connection can read two database files.",
+        "Put the database name in front of a table to say which copy you mean. Plain `badge_scans` (or `main.badge_scans`) is the live table. `backup.badge_scans` is the 01:00 copy.",
+        {
+         "sql": "PRAGMA database_list;"
+        },
+        "A scalar subquery is a query in brackets that returns a single value. You can use one anywhere a value fits, even in the `SELECT` list:",
+        {
+         "sql": "SELECT (SELECT COUNT(*) FROM employees) AS staff_count;"
+        },
+        {
+         "note": "On a server: PostgreSQL and MySQL don't ATTACH files. You would restore the backup into its own database (pg_restore -d archive_backup) and query across with postgres_fdw, or restore it into a separate schema in the same database."
+        }
+       ],
+       "task": "In **one** query, show the number of rows in the live `badge_scans` next to the number in `backup.badge_scans`.",
+       "hint": "Two scalar subqueries in one SELECT: `SELECT (SELECT COUNT(*) FROM …) AS live, (SELECT COUNT(*) FROM …) AS backup;`",
+       "answer": "SELECT (SELECT COUNT(*) FROM badge_scans)        AS live,\n       (SELECT COUNT(*) FROM backup.badge_scans) AS backup;",
+       "check": {
+        "type": "rows",
+        "sql": "SELECT (SELECT COUNT(*) FROM badge_scans) AS live, (SELECT COUNT(*) FROM backup.badge_scans) AS backup"
+       }
+      },
+      {
+       "id": "except",
+       "title": "What changed? EXCEPT",
+       "body": [
+        "`A EXCEPT B` returns the rows of A that do not appear in B, comparing every column. Both sides need the same number of columns.",
+        {
+         "sql": "SELECT * FROM admin_sessions\nEXCEPT\nSELECT * FROM backup.admin_sessions;"
+        },
+        "Its relatives are `UNION` (rows in either, without duplicates) and `INTERSECT` (rows in both).",
+        "Expect some honest rows in your answer. The badge readers kept working after 01:00, so this morning's scans are new too. Look at `scanned_at` and `modified_at` to tell them apart."
+       ],
+       "task": "List every row of the live `badge_scans` that is **not identical** to a row in the backup.",
+       "hint": "Same shape as the example, with badge_scans on both sides.",
+       "answer": "SELECT * FROM badge_scans\nEXCEPT\nSELECT * FROM backup.badge_scans;",
+       "check": {
+        "type": "rows",
+        "sql": "SELECT id FROM (SELECT * FROM badge_scans EXCEPT SELECT * FROM backup.badge_scans)"
+       }
+      },
+      {
+       "id": "vanished",
+       "title": "What vanished? Anti-joins",
+       "body": [
+        "EXCEPT finds changed rows, but deleted rows only exist in the backup. To find rows with no partner, use an **anti-join**: a LEFT JOIN keeps every row on the left, puts NULLs where there is no match, and then you keep only the NULLs.",
+        {
+         "sql": "SELECT e.name\nFROM employees AS e\nLEFT JOIN admin_sessions AS s ON s.employee_id = e.id\nWHERE s.id IS NULL;   -- people who never used the console"
+        },
+        "`WHERE id NOT IN (SELECT id FROM …)` gives the same answer here. Be careful with NOT IN, though: if the subquery returns even one NULL, it matches nothing at all."
+       ],
+       "task": "Find the backup rows of `badge_scans` whose `id` **no longer exists** in the live table.",
+       "hint": "LEFT JOIN badge_scans (live) to backup.badge_scans on id, from the backup side, and keep the rows where the live id IS NULL.",
+       "answer": "SELECT b.*\nFROM backup.badge_scans AS b\nLEFT JOIN badge_scans AS l ON l.id = b.id\nWHERE l.id IS NULL;",
+       "check": {
+        "type": "rows",
+        "sql": "SELECT id FROM backup.badge_scans WHERE id NOT IN (SELECT id FROM badge_scans)"
+       }
+      },
+      {
+       "id": "who",
+       "title": "Who was at the console?",
+       "body": [
+        "The admin console stamps `modified_at` on every row it touches. `admin_sessions` records who was signed in to the console, and when.",
+        "Join the tampered rows to the sessions they fall inside. Careful: one console edit happened **before** the backup. It was a routine fix, and it is in both copies."
+       ],
+       "task": "Find the person whose console session covers the edits made **after** the backup. Every row of your result should name that person.",
+       "hint": "Start from the rows that EXCEPT found and that have a modified_at. Join admin_sessions ON modified_at BETWEEN logged_in_at AND logged_out_at, then employees.",
+       "answer": "WITH changed AS (\n  SELECT * FROM badge_scans\n  EXCEPT\n  SELECT * FROM backup.badge_scans\n)\nSELECT DISTINCT e.name, s.workstation, s.logged_in_at, s.logged_out_at\nFROM changed AS c\nJOIN admin_sessions AS s ON c.modified_at BETWEEN s.logged_in_at AND s.logged_out_at\nJOIN employees AS e ON e.id = s.employee_id;",
+       "check": {
+        "type": "value",
+        "value": "Gideon Marsh",
+        "message": "Not yet. Every row of your result should name the one person who was signed in during the after-backup edits."
+       }
+      },
+      {
+       "id": "rollback",
+       "title": "The undo button: transactions",
+       "body": [
+        "This level is writable, and changes you make **stay** until you press \"Reset database\". So learn the safety net first.",
+        "`BEGIN` starts a transaction. Nothing inside it is final until `COMMIT`. `ROLLBACK` throws all of it away, as if it never happened. Inside the transaction, your own queries already see the changes.",
+        {
+         "sql": "BEGIN;\nDELETE FROM employees;\nSELECT COUNT(*) FROM employees;   -- 0, but only inside the transaction\nROLLBACK;\nSELECT COUNT(*) FROM employees;   -- everyone is back"
+        },
+        "Here, each press of Run is one session. A transaction you start but never COMMIT is rolled back when the run ends.",
+        {
+         "note": "On a server: transactions work the same way in PostgreSQL and MySQL. Many clients (psql, DBeaver) commit each statement on its own unless you BEGIN first. Get into the habit of opening a transaction before any manual UPDATE or DELETE on production data."
+        }
+       ],
+       "task": "Inside a transaction, **delete every row** of `badge_scans`, then **ROLLBACK** so nothing is lost. Finish by counting the rows.",
+       "hint": "Use the example, with badge_scans instead of employees.",
+       "answer": "BEGIN;\nDELETE FROM badge_scans;\nSELECT COUNT(*) FROM badge_scans;\nROLLBACK;\nSELECT COUNT(*) FROM badge_scans;",
+       "check": {
+        "type": "all",
+        "checks": [
+         {
+          "type": "sql",
+          "pattern": "\\bBEGIN\\b[\\s\\S]*\\bDELETE\\b[\\s\\S]*\\bROLLBACK\\b",
+          "message": "Write BEGIN, then the DELETE, then ROLLBACK, all in one run."
+         },
+         {
+          "type": "state",
+          "sql": "SELECT COUNT(*) > 0 FROM badge_scans",
+          "message": "badge_scans is empty! Press \"Reset database\" in the Lessons tab and try again with ROLLBACK."
+         }
+        ]
+       }
+      },
+      {
+       "id": "restore",
+       "title": "Restore the evidence",
+       "body": [
+        "Now repair the live table, using the backup as the source of truth. Three kinds of damage need fixing:",
+        {
+         "list": [
+          "**Edited** rows: copy the backup version back over them.",
+          "**Deleted** rows: insert them again from the backup.",
+          "**Forged** rows: delete the row that is not in the backup **and** carries a console stamp in modified_at."
+         ]
+        },
+        "Don't just wipe every row the backup lacks. This morning's honest scans aren't in the backup either.",
+        "`INSERT OR REPLACE` inserts a row, or replaces the existing row with the same primary key. Together with `INSERT … SELECT`, which inserts a query's rows, it handles the first two cases in one statement:",
+        {
+         "sql": "INSERT OR REPLACE INTO badge_scans\nSELECT * FROM backup.badge_scans;"
+        },
+        "Wrap all of it in `BEGIN … COMMIT` so the table is never left half-repaired. If you make a mess, \"Reset database\" brings back the tampered starting state.",
+        {
+         "note": "On a server: you would usually restore the whole backup to a scratch database, check it, then copy the rows you need, exactly as here. For \"undo everything since 01:00\" there is point-in-time recovery (PostgreSQL WAL archiving, MySQL binlogs). Those replay the log up to a chosen moment."
+        }
+       ],
+       "task": "Repair `badge_scans`: every backup row back exactly as it was, the forged row gone, and this morning's honest scans kept.",
+       "hint": "Two statements in a transaction. A DELETE for rows whose id is NOT IN the backup AND whose modified_at IS NOT NULL. Then the INSERT OR REPLACE from the example.",
+       "answer": "BEGIN;\nDELETE FROM badge_scans\nWHERE id NOT IN (SELECT id FROM backup.badge_scans)\n  AND modified_at IS NOT NULL;\nINSERT OR REPLACE INTO badge_scans\nSELECT * FROM backup.badge_scans;\nCOMMIT;",
+       "check": {
+        "type": "all",
+        "checks": [
+         {
+          "type": "state",
+          "sql": "SELECT NOT EXISTS (SELECT * FROM backup.badge_scans EXCEPT SELECT * FROM badge_scans)",
+          "message": "Some backup rows are still missing or different in the live badge_scans. Check with EXCEPT."
+         },
+         {
+          "type": "state",
+          "sql": "SELECT NOT EXISTS (SELECT 1 FROM badge_scans WHERE id NOT IN (SELECT id FROM backup.badge_scans) AND modified_at IS NOT NULL)",
+          "message": "There is still a row that isn't in the backup and that the console stamped in modified_at. That is the forged scan."
+         },
+         {
+          "type": "state",
+          "sql": "SELECT COUNT(*) = 5 FROM badge_scans WHERE id BETWEEN 63 AND 67 AND modified_at IS NULL",
+          "message": "This morning's honest scans are gone too. They happened after the backup, so the backup can't bring them back. Press \"Reset database\" and restore more carefully."
+         }
+        ]
+       }
+      },
+      {
+       "id": "trigger",
+       "title": "Lock it down with a trigger",
+       "body": [
+        "A **trigger** is SQL that the database runs by itself when something happens to a table. `RAISE(ABORT, 'message')` inside a trigger cancels the statement that fired it.",
+        {
+         "sql": "CREATE TRIGGER no_new_sessions\nBEFORE INSERT ON admin_sessions\nBEGIN\n  SELECT RAISE(ABORT, 'admin_sessions is append-only for the system');\nEND;"
+        },
+        "Badge readers must still be able to add scans, but nobody should ever change or delete one again. So you need **two** triggers: one `BEFORE UPDATE` and one `BEFORE DELETE` on `badge_scans`. To remove a trigger you made by mistake, use `DROP TRIGGER name;`.",
+        {
+         "note": "On a server you would also use permissions. SQLite has no users, so a trigger is the closest tool. In PostgreSQL: REVOKE UPDATE, DELETE ON badge_scans FROM console_role; and give the console a role that can only INSERT and SELECT. Triggers are still useful there for audit tables."
+        }
+       ],
+       "task": "Make `badge_scans` **append-only**: UPDATE and DELETE must fail, and INSERT must still work.",
+       "hint": "CREATE TRIGGER … BEFORE UPDATE ON badge_scans BEGIN SELECT RAISE(ABORT, '…'); END; and the same again for BEFORE DELETE, with a different trigger name.",
+       "answer": "CREATE TRIGGER badge_scans_no_update\nBEFORE UPDATE ON badge_scans\nBEGIN\n  SELECT RAISE(ABORT, 'badge_scans is append-only');\nEND;\n\nCREATE TRIGGER badge_scans_no_delete\nBEFORE DELETE ON badge_scans\nBEGIN\n  SELECT RAISE(ABORT, 'badge_scans is append-only');\nEND;",
+       "check": {
+        "type": "all",
+        "checks": [
+         {
+          "type": "blocked",
+          "statements": [
+           "UPDATE badge_scans SET door = door WHERE id = 1;",
+           "DELETE FROM badge_scans WHERE id = 1;"
+          ],
+          "message": "An UPDATE or a DELETE on badge_scans still goes through. You need a BEFORE UPDATE and a BEFORE DELETE trigger."
+         },
+         {
+          "type": "allowed",
+          "statements": [
+           "INSERT INTO badge_scans (employee_id, door, direction, scanned_at) VALUES (3, 'Main Entrance', 'in', '2026-10-22 09:15');"
+          ],
+          "message": "New scans are being blocked too, so the badge readers would stop working. Only UPDATE and DELETE should fail. Use DROP TRIGGER to remove the wrong one."
+         }
+        ]
+       }
+      },
+      {
+       "id": "index",
+       "title": "Make it fast: indexes",
+       "body": [
+        "Investigators keep asking for one person's scans. Without an index, SQLite reads every row to find them, which is called a **scan**. An **index** is a sorted copy of one or more columns, so SQLite can jump straight to the matching rows instead. That is called a **search**.",
+        "`EXPLAIN QUERY PLAN` shows which one SQLite will do:",
+        {
+         "sql": "EXPLAIN QUERY PLAN\nSELECT * FROM badge_scans\nWHERE employee_id = 1 AND scanned_at >= '2026-10-20';"
+        },
+        "Run it now and you'll see `SCAN badge_scans`. Create an index whose **first** column is the one you filter on, then run the plan again.",
+        "With only 67 rows you won't feel the difference. With 67 million you would. Indexes cost a little space and make writes slightly slower.",
+        {
+         "note": "On a server: same idea. CREATE INDEX CONCURRENTLY (PostgreSQL) builds an index without locking out writers, and EXPLAIN ANALYZE runs the query to show real timings."
+        }
+       ],
+       "task": "Create an index so that the query above **searches** badge_scans using an index instead of scanning it.",
+       "hint": "CREATE INDEX idx_badge_scans_employee ON badge_scans (employee_id, scanned_at);",
+       "answer": "CREATE INDEX idx_badge_scans_employee\nON badge_scans (employee_id, scanned_at);\n\nEXPLAIN QUERY PLAN\nSELECT * FROM badge_scans\nWHERE employee_id = 1 AND scanned_at >= '2026-10-20';",
+       "check": {
+        "type": "plan",
+        "sql": "SELECT * FROM badge_scans WHERE employee_id = 1 AND scanned_at >= '2026-10-20'",
+        "pattern": "USING (COVERING )?INDEX",
+        "message": "The plan still scans badge_scans. The index has to start with employee_id."
+       }
+      },
+      {
+       "id": "view",
+       "title": "A view for the prosecutor",
+       "body": [
+        "A **view** is a saved query with a name. You select from it like a table, and it always shows the current data, because it runs its query each time. Views give other people a simple, fixed window onto messy tables.",
+        {
+         "sql": "CREATE VIEW console_users AS\nSELECT DISTINCT e.name, e.department\nFROM admin_sessions AS s\nJOIN employees AS e ON e.id = s.employee_id;\n\nSELECT * FROM console_users;"
+        },
+        "To change a view, `DROP VIEW name;` and create it again."
+       ],
+       "task": "Create a view called `vault_timeline` that lists every **Records Vault** scan between 18:00 on 20 October and 06:00 on 21 October, with the person's `name`, the `direction` and `scanned_at`, oldest first.",
+       "hint": "Join badge_scans to employees, filter door = 'Records Vault' and scanned_at BETWEEN '2026-10-20 18:00' AND '2026-10-21 06:00', then ORDER BY scanned_at. If the view shows the forged rows, restore the evidence first.",
+       "answer": "CREATE VIEW vault_timeline AS\nSELECT e.name, b.direction, b.scanned_at\nFROM badge_scans AS b\nJOIN employees AS e ON e.id = b.employee_id\nWHERE b.door = 'Records Vault'\n  AND b.scanned_at BETWEEN '2026-10-20 18:00' AND '2026-10-21 06:00'\nORDER BY b.scanned_at;\n\nSELECT * FROM vault_timeline;",
+       "check": {
+        "type": "stateRows",
+        "sql": "SELECT * FROM vault_timeline",
+        "reference": "SELECT e.name, b.direction, b.scanned_at\nFROM backup.badge_scans AS b JOIN backup.employees AS e ON e.id = b.employee_id\nWHERE b.door = 'Records Vault' AND b.scanned_at BETWEEN '2026-10-20 18:00' AND '2026-10-21 06:00'\nORDER BY b.scanned_at",
+        "ordered": true,
+        "message": "vault_timeline doesn't show the true vault scans yet. Check the view's name, its filters and its ORDER BY. If it still shows the forged rows, finish \"Restore the evidence\" first."
+       }
+      },
+      {
+       "id": "backup",
+       "title": "Take your own backup",
+       "body": [
+        "`VACUUM INTO 'file.db'` writes a complete, compact copy of the database to a new file. It is the simplest safe way to back up a SQLite database while it is in use.",
+        {
+         "sql": "VACUUM INTO 'archive-2026-10-22.db';"
+        },
+        "It will not overwrite an existing file, so use a new name each time. The file is kept in your browser for this session, and a **Download** button appears in the Lessons tab so you can open it in any SQLite tool.",
+        {
+         "note": "On a server: pg_dump archive > archive.sql (or pg_dump -Fc for a compressed archive you restore with pg_restore), and mysqldump for MySQL. Real setups automate this, keep copies off the machine, and, most importantly, regularly test that the backups actually restore."
+        }
+       ],
+       "task": "Once the evidence is restored and locked down, back up the database to a file with `VACUUM INTO`.",
+       "hint": "VACUUM INTO 'archive-2026-10-22.db'; (VACUUM can't run inside a transaction.)",
+       "answer": "VACUUM INTO 'archive-2026-10-22.db';",
+       "check": {
+        "type": "file",
+        "sql": "SELECT EXISTS (SELECT 1 FROM sqlite_schema WHERE type = 'trigger' AND tbl_name = 'badge_scans') AND NOT EXISTS (SELECT * FROM backup.badge_scans EXCEPT SELECT * FROM badge_scans)",
+        "message": "The backup file was written, but it should contain the restored badge_scans and your triggers. Finish those missions, then run VACUUM INTO again with a new file name."
+       }
+      },
+      {
+       "id": "beyond",
+       "title": "Beyond SQLite: running a database server",
+       "body": [
+        "SQLite is a file. PostgreSQL, MySQL and SQL Server are **servers**: long-running programs that many users connect to over the network. Your SQL carries over almost unchanged. What servers add is mostly about people, uptime and scale:",
+        {
+         "list": [
+          "**Users and roles.** CREATE ROLE analyst LOGIN; GRANT SELECT ON ALL TABLES IN SCHEMA public TO analyst; Each app and person gets only what they need.",
+          "**Backups.** pg_dump and mysqldump for logical copies, base backups plus WAL or binlog archiving for point-in-time recovery. Test your restores.",
+          "**Replication.** A primary streams its changes to replicas. They serve reads and can take over if the primary fails.",
+          "**Connections.** Servers limit concurrent connections, and pools like PgBouncer share a few among many clients.",
+          "**Monitoring.** Slow-query logs, pg_stat_statements and EXPLAIN ANALYZE show where time goes.",
+          "**Migrations.** Schema changes are versioned scripts (Flyway, Liquibase, or your framework's tool), run the same way everywhere."
+         ]
+        },
+        "Want to practise for real? Install PostgreSQL locally, or start it with `docker run -e POSTGRES_PASSWORD=dev -p 5432:5432 postgres`. Then try the missions of this level again: create a role, revoke UPDATE from it, dump the database and restore it somewhere else."
+       ],
+       "task": "Read this one, then mark it done.",
+       "check": {
+        "type": "read"
+       }
+      }
+     ],
+     "finale": {
+      "title": "Evidence secured",
+      "body": "You diffed a live database against a backup, traced the tampering to one console session, repaired the data inside a transaction, locked the table with triggers, sped it up with an index, published a view, and took a verified backup. That is the everyday work of a database administrator."
+     }
+    }
+   },
+   "endings": {}
+  }
+ ]
+}
