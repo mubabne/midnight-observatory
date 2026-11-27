@@ -1,0 +1,192 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="color-scheme" content="dark" />
+    <meta name="description" content="Solve a murder at a mountain observatory by writing real SQL queries. English and Mongolian." />
+    <title>Midnight at the Observatory</title>
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+  </head>
+  <body data-view="case" data-side="case">
+    <a class="skip-link" href="#editor" data-i18n="skipLink">Skip to the SQL editor</a>
+
+    <header class="topbar">
+      <div class="brand">
+        <svg class="brand-mark" viewBox="0 0 48 48" aria-hidden="true">
+          <path d="M8 34a16 16 0 0 1 32 0z" fill="none" stroke="currentColor" stroke-width="2" />
+          <path d="M22 18.2l12-5.6 1.4 3-12 5.6z" fill="currentColor" />
+          <path d="M5 34h38M14 34v6M34 34v6" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
+          <circle cx="40" cy="8" r="1.4" fill="currentColor" />
+          <circle cx="33" cy="5" r="0.9" fill="currentColor" />
+          <circle cx="44" cy="15" r="0.9" fill="currentColor" />
+        </svg>
+        <div>
+          <p class="eyebrow" data-i18n="eyebrow">Case file 26-1017 · Halvorsen Ridge</p>
+          <h1 data-i18n="title">Midnight at the Observatory</h1>
+        </div>
+      </div>
+      <div class="topbar-actions">
+        <span id="engine-status" class="status-pill" data-state="loading" role="status">Loading evidence…</span>
+        <div class="lang-switch" role="group" data-i18n-attr="aria-label:langLabel" aria-label="Language">
+          <button type="button" class="lang-btn" data-lang="en" lang="en" aria-pressed="true">English</button>
+          <button type="button" class="lang-btn" data-lang="mn" lang="mn" aria-pressed="false">Монгол</button>
+        </div>
+        <button type="button" class="btn btn-ghost" id="goto-accuse" data-i18n="gotoAccuse">Name a suspect</button>
+        <button type="button" class="btn btn-ghost btn-danger-text" id="open-reset" data-i18n="startOver">Start over</button>
+      </div>
+    </header>
+
+    <div id="notice" class="notice" role="status" hidden></div>
+
+    <div id="engine-error" class="engine-error" role="alert" hidden>
+      <p><strong data-i18n="engineFailedTitle">The SQL engine didn't load.</strong> <span id="engine-error-text"></span></p>
+      <button type="button" class="btn btn-primary" id="engine-retry" data-i18n="tryAgain">Try again</button>
+    </div>
+
+    <nav class="tabs" data-i18n-attr="aria-label:navLabel" aria-label="Workspace sections">
+      <button type="button" class="tab" data-target="case" aria-controls="panel-case"><span data-i18n="tabCase">Case</span></button>
+      <button type="button" class="tab tab-query" data-target="query" aria-controls="panel-query"><span data-i18n="tabQuery">Query</span></button>
+      <button type="button" class="tab" data-target="tables" aria-controls="panel-tables"><span data-i18n="tabTables">Tables</span></button>
+      <button type="button" class="tab" data-target="hints" aria-controls="panel-hints"><span data-i18n="tabHints">Hints</span> <span class="tab-badge" id="hint-badge"></span></button>
+      <button type="button" class="tab" data-target="notes" aria-controls="panel-notes"><span data-i18n="tabNotes">Notebook</span></button>
+      <button type="button" class="tab" data-target="history" aria-controls="panel-history"><span data-i18n="tabHistory">History</span> <span class="tab-badge" id="history-badge"></span></button>
+    </nav>
+
+    <main class="layout">
+      <aside class="sidebar" data-i18n-attr="aria-label:sidebarLabel" aria-label="Case file">
+        <!-- CASE -->
+        <section class="panel" id="panel-case" data-panel="case" aria-labelledby="case-heading">
+          <div class="dossier">
+            <p class="stamp" data-i18n="stamp">Homicide · Active</p>
+            <h2 id="case-heading" data-i18n="briefingHeading">The briefing</h2>
+            <p id="case-premise"></p>
+            <dl class="facts" id="case-facts"></dl>
+            <p class="objective"><strong data-i18n="yourJob">Your job:</strong> <span id="case-objective"></span></p>
+          </div>
+
+          <div id="solved-banner" class="solved-banner" hidden>
+            <p data-i18n-html="solvedHtml"><strong>Case closed.</strong> You named the killer.</p>
+            <button type="button" class="btn btn-primary" id="reopen-ending" data-i18n="readSummary">Read the case summary</button>
+          </div>
+
+          <h3 data-i18n="recordsHeading">How the records work</h3>
+          <ul class="conventions" id="case-conventions"></ul>
+
+          <form id="accuse-form" class="accuse" novalidate>
+            <h3 id="accuse-heading" data-i18n="accuseHeading">Name the killer</h3>
+            <p class="muted" data-i18n-html="accuseHelpHtml">Write the person's full name as it appears in <code>people</code>. Wrong guesses cost nothing.</p>
+            <div class="accuse-row">
+              <label class="sr-only" for="accuse-input" data-i18n="accuseLabel">Suspect's full name</label>
+              <input id="accuse-input" name="suspect" type="text" autocomplete="off" spellcheck="false" placeholder="Full name" data-i18n-attr="placeholder:accusePlaceholder" />
+              <button type="submit" class="btn btn-primary" id="accuse-submit" data-i18n="accuseButton">Accuse</button>
+            </div>
+            <p id="accuse-feedback" class="accuse-feedback" role="status" aria-live="polite"></p>
+          </form>
+        </section>
+
+        <!-- TABLES -->
+        <section class="panel" id="panel-tables" data-panel="tables" aria-labelledby="tables-heading">
+          <h2 id="tables-heading" data-i18n="tablesHeading">Evidence tables</h2>
+          <p class="muted" data-i18n-html="tablesLegendHtml"></p>
+          <div id="schema-list" class="schema-list" aria-busy="true">
+            <p class="muted" data-i18n="tablesLoading">Loading tables…</p>
+          </div>
+        </section>
+
+        <!-- HINTS -->
+        <section class="panel" id="panel-hints" data-panel="hints" aria-labelledby="hints-heading">
+          <h2 id="hints-heading" data-i18n="hintsHeading">Hints</h2>
+          <p class="muted" data-i18n="hintsHelp"></p>
+          <ol id="hint-list" class="hint-list"></ol>
+          <button type="button" class="btn btn-secondary" id="reveal-hint">Reveal hint 1</button>
+          <div class="bonus">
+            <div id="bonus-body" hidden></div>
+            <button type="button" class="btn btn-ghost" id="reveal-bonus" data-i18n="revealBonus">Show the bonus lead (GROUP BY)</button>
+          </div>
+        </section>
+
+        <!-- NOTES -->
+        <section class="panel" id="panel-notes" data-panel="notes" aria-labelledby="notes-heading">
+          <h2 id="notes-heading" data-i18n="notesHeading">Detective's notebook</h2>
+          <label for="notes" class="muted" data-i18n="notesLabel">Jot down names, times and hunches. Saved automatically in this browser.</label>
+          <textarea id="notes" class="notes" spellcheck="true" rows="14" data-i18n-attr="placeholder:notesPlaceholder"></textarea>
+          <p class="muted small" id="notes-status" aria-live="polite"></p>
+        </section>
+
+        <!-- HISTORY -->
+        <section class="panel" id="panel-history" data-panel="history" aria-labelledby="history-heading">
+          <div class="panel-head">
+            <h2 id="history-heading" data-i18n="historyHeading">Query history</h2>
+            <button type="button" class="btn btn-ghost btn-small" id="clear-history" data-i18n="clear">Clear</button>
+          </div>
+          <p class="muted" data-i18n="historyHelp">Your last 50 queries. Load one back into the editor or run it again.</p>
+          <ol id="history-list" class="history-list"></ol>
+        </section>
+      </aside>
+
+      <!-- QUERY DESK -->
+      <section class="desk panel" id="panel-query" data-panel="query" data-i18n-attr="aria-label:deskLabel" aria-label="Query desk">
+        <div class="card editor-card">
+          <div class="card-head">
+            <label for="editor" class="card-title" data-i18n="editorTitle">SQL editor</label>
+            <span class="muted small" data-i18n-html="editorShortcutHtml"></span>
+          </div>
+          <textarea
+            id="editor"
+            class="editor"
+            spellcheck="false"
+            autocapitalize="off"
+            autocomplete="off"
+            autocorrect="off"
+            rows="9"
+            aria-describedby="editor-help"
+          ></textarea>
+          <p id="editor-help" class="sr-only" data-i18n="editorHelp"></p>
+          <div class="toolbar">
+            <button type="button" class="btn btn-primary" id="run" disabled data-i18n="run">Run query</button>
+            <button type="button" class="btn btn-ghost" id="load-starter" data-i18n="starter">Starting query</button>
+            <button type="button" class="btn btn-ghost" id="pin-result" disabled data-i18n="pin">Copy result to notebook</button>
+          </div>
+        </div>
+
+        <div class="card results-card">
+          <div class="card-head">
+            <h2 class="card-title" data-i18n="resultsTitle">Results</h2>
+            <span id="result-meta" class="muted small" aria-live="polite"></span>
+          </div>
+          <div id="results" class="results" aria-live="polite"></div>
+        </div>
+      </section>
+    </main>
+
+    <!-- Ending -->
+    <dialog id="ending" class="dialog dialog-wide" aria-labelledby="ending-title">
+      <div class="dialog-body">
+        <p class="stamp stamp-solved" data-i18n="endingStamp">Case closed</p>
+        <h2 id="ending-title"></h2>
+        <h3 data-i18n="motive">Motive</h3>
+        <p id="ending-motive"></p>
+        <h3 data-i18n="howItFits">How the evidence fits</h3>
+        <ol id="ending-chain" class="ending-chain"></ol>
+        <div class="dialog-actions">
+          <button type="button" class="btn btn-primary" data-close data-i18n="backToDesk">Back to the desk</button>
+        </div>
+      </div>
+    </dialog>
+
+    <!-- Reset confirmation -->
+    <dialog id="confirm-reset" class="dialog" aria-labelledby="reset-title">
+      <form method="dialog" class="dialog-body">
+        <h2 id="reset-title" data-i18n="resetTitle">Start the case over?</h2>
+        <p data-i18n="resetBody"></p>
+        <div class="dialog-actions">
+          <button type="submit" value="cancel" class="btn btn-ghost" autofocus data-i18n="resetKeep">Keep my progress</button>
+          <button type="submit" value="confirm" class="btn btn-danger" data-i18n="resetConfirm">Delete progress and start over</button>
+        </div>
+      </form>
+    </dialog>
+
+    <script type="module" src="/src/main.js"></script>
+  </body>
+</html>
