@@ -33,7 +33,8 @@ export function renderSchema(container, schema, { notes = {}, onInsert, onCopy }
         'summary',
         {},
         el('code', { class: 'table-name', text: table.name }),
-        el('span', { class: 'muted small', text: t('rowsCount', table.rowCount) })
+        table.kind === 'view' ? el('span', { class: 'key-fk', text: t('viewKind') }) : null,
+        table.rowCount === null ? null : el('span', { class: 'muted small', text: t('rowsCount', table.rowCount) })
       ),
       el('p', { class: 'muted small', text: notes[table.name] ?? '' }),
       cols,

@@ -3,7 +3,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { q, col } from './helpers.js';
-import { getCase } from '../src/case/case.js';
+import { getCase } from '../src/levels/observatory/case.js';
 
 const { hints: HINTS, startingQuery: STARTING_QUERY } = getCase('en');
 

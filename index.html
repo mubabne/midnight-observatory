@@ -4,8 +4,8 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta name="color-scheme" content="dark" />
-    <meta name="description" content="Solve a murder at a mountain observatory by writing real SQL queries. English and Mongolian." />
-    <title>Midnight at the Observatory</title>
+    <meta name="description" content="Learn SQL by solving cases: four levels, from your first SELECT to restoring a tampered database. Runs in your browser." />
+    <title>The Academy · SQL detective game</title>
     <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
   </head>
   <body data-view="case" data-side="case">
@@ -22,8 +22,8 @@
           <circle cx="44" cy="15" r="0.9" fill="currentColor" />
         </svg>
         <div>
-          <p class="eyebrow" data-i18n="eyebrow">Case file 26-1017 · Halvorsen Ridge</p>
-          <h1 data-i18n="title">Midnight at the Observatory</h1>
+          <p class="eyebrow" id="level-eyebrow"></p>
+          <h1 id="level-title"></h1>
         </div>
       </div>
       <div class="topbar-actions">
@@ -32,6 +32,7 @@
           <button type="button" class="lang-btn" data-lang="en" lang="en" aria-pressed="true">English</button>
           <button type="button" class="lang-btn" data-lang="mn" lang="mn" aria-pressed="false">Монгол</button>
         </div>
+        <button type="button" class="btn btn-secondary" id="open-levels" aria-haspopup="dialog" data-i18n="levelsButton">Levels</button>
         <button type="button" class="btn btn-ghost" id="goto-accuse" data-i18n="gotoAccuse">Name a suspect</button>
         <button type="button" class="btn btn-ghost btn-danger-text" id="open-reset" data-i18n="startOver">Start over</button>
       </div>
@@ -45,10 +46,10 @@
     </div>
 
     <nav class="tabs" data-i18n-attr="aria-label:navLabel" aria-label="Workspace sections">
-      <button type="button" class="tab" data-target="case" aria-controls="panel-case"><span data-i18n="tabCase">Case</span></button>
+      <button type="button" class="tab" data-target="case" aria-controls="panel-case"><span id="tab-case-label">Case</span> <span class="tab-badge" id="lesson-badge"></span></button>
       <button type="button" class="tab tab-query" data-target="query" aria-controls="panel-query"><span data-i18n="tabQuery">Query</span></button>
       <button type="button" class="tab" data-target="tables" aria-controls="panel-tables"><span data-i18n="tabTables">Tables</span></button>
-      <button type="button" class="tab" data-target="hints" aria-controls="panel-hints"><span data-i18n="tabHints">Hints</span> <span class="tab-badge" id="hint-badge"></span></button>
+      <button type="button" class="tab" id="tab-hints" data-target="hints" aria-controls="panel-hints"><span data-i18n="tabHints">Hints</span> <span class="tab-badge" id="hint-badge"></span></button>
       <button type="button" class="tab" data-target="notes" aria-controls="panel-notes"><span data-i18n="tabNotes">Notebook</span></button>
       <button type="button" class="tab" data-target="history" aria-controls="panel-history"><span data-i18n="tabHistory">History</span> <span class="tab-badge" id="history-badge"></span></button>
     </nav>
@@ -57,8 +58,60 @@
       <aside class="sidebar" data-i18n-attr="aria-label:sidebarLabel" aria-label="Case file">
         <!-- CASE -->
         <section class="panel" id="panel-case" data-panel="case" aria-labelledby="case-heading">
+          <!-- LESSON LEVELS -->
+          <div id="lesson-view" hidden>
+            <div class="dossier">
+              <p class="stamp stamp-training" id="lesson-stamp"></p>
+              <h2 id="lesson-level-title"></h2>
+              <p id="lesson-intro"></p>
+              <p class="lesson-progress"><span id="lesson-progress-text"></span></p>
+              <div class="progress-track" aria-hidden="true"><span class="progress-fill" id="lesson-progress-bar"></span></div>
+            </div>
+
+            <div id="lesson-finale" class="solved-banner" hidden>
+              <p><strong id="lesson-finale-title"></strong> <span id="lesson-finale-body"></span></p>
+              <button type="button" class="btn btn-primary" id="lesson-finale-next"></button>
+            </div>
+
+            <article class="lesson" id="lesson-card" aria-labelledby="lesson-title">
+              <p class="eyebrow" id="lesson-number"></p>
+              <h3 id="lesson-title" tabindex="-1"></h3>
+              <div id="lesson-body" class="lesson-body"></div>
+              <div class="task-box">
+                <h4 data-i18n="yourTask">Your task</h4>
+                <p id="lesson-task"></p>
+              </div>
+              <p id="lesson-status" class="lesson-status" role="status" aria-live="polite"></p>
+              <div class="lesson-help" id="lesson-help">
+                <button type="button" class="btn btn-small btn-ghost" id="lesson-show-hint" data-i18n="showHint">Show a hint</button>
+                <button type="button" class="btn btn-small btn-ghost" id="lesson-show-answer" data-i18n="showAnswer">Show the answer</button>
+                <button type="button" class="btn btn-small btn-primary" id="lesson-mark-read" data-i18n="markRead" hidden>Mark as done</button>
+              </div>
+              <p id="lesson-hint" class="lesson-hint" hidden></p>
+              <div id="lesson-answer" hidden></div>
+              <div class="lesson-nav">
+                <button type="button" class="btn btn-small btn-ghost" id="lesson-prev" data-i18n="prevLesson">← Previous</button>
+                <button type="button" class="btn btn-small btn-secondary" id="lesson-next" data-i18n="nextLesson">Next lesson →</button>
+              </div>
+            </article>
+
+            <div id="db-tools" class="db-tools" hidden>
+              <h3 data-i18n="dbToolsHeading">Your database</h3>
+              <p class="muted small" data-i18n="dbToolsHelp"></p>
+              <div class="db-actions">
+                <button type="button" class="btn btn-small btn-ghost btn-danger-text" id="reset-db" data-i18n="resetDb">Reset database</button>
+              </div>
+              <ul id="downloads" class="downloads"></ul>
+            </div>
+
+            <h3 data-i18n="lessonsHeading">All lessons</h3>
+            <ol id="lesson-list" class="lesson-list"></ol>
+          </div>
+
+          <!-- CASE LEVELS -->
+          <div id="case-view">
           <div class="dossier">
-            <p class="stamp" data-i18n="stamp">Homicide · Active</p>
+            <p class="stamp" id="case-stamp"></p>
             <h2 id="case-heading" data-i18n="briefingHeading">The briefing</h2>
             <p id="case-premise"></p>
             <dl class="facts" id="case-facts"></dl>
@@ -66,7 +119,7 @@
           </div>
 
           <div id="solved-banner" class="solved-banner" hidden>
-            <p data-i18n-html="solvedHtml"><strong>Case closed.</strong> You named the killer.</p>
+            <p id="solved-text"></p>
             <button type="button" class="btn btn-primary" id="reopen-ending" data-i18n="readSummary">Read the case summary</button>
           </div>
 
@@ -74,8 +127,8 @@
           <ul class="conventions" id="case-conventions"></ul>
 
           <form id="accuse-form" class="accuse" novalidate>
-            <h3 id="accuse-heading" data-i18n="accuseHeading">Name the killer</h3>
-            <p class="muted" data-i18n-html="accuseHelpHtml">Write the person's full name as it appears in <code>people</code>. Wrong guesses cost nothing.</p>
+            <h3 id="accuse-heading"></h3>
+            <p class="muted" id="accuse-help"></p>
             <div class="accuse-row">
               <label class="sr-only" for="accuse-input" data-i18n="accuseLabel">Suspect's full name</label>
               <input id="accuse-input" name="suspect" type="text" autocomplete="off" spellcheck="false" placeholder="Full name" data-i18n-attr="placeholder:accusePlaceholder" />
@@ -83,6 +136,7 @@
             </div>
             <p id="accuse-feedback" class="accuse-feedback" role="status" aria-live="polite"></p>
           </form>
+          </div>
         </section>
 
         <!-- TABLES -->
@@ -102,7 +156,7 @@
           <button type="button" class="btn btn-secondary" id="reveal-hint">Reveal hint 1</button>
           <div class="bonus">
             <div id="bonus-body" hidden></div>
-            <button type="button" class="btn btn-ghost" id="reveal-bonus" data-i18n="revealBonus">Show the bonus lead (GROUP BY)</button>
+            <button type="button" class="btn btn-ghost" id="reveal-bonus"></button>
           </div>
         </section>
 
@@ -110,7 +164,7 @@
         <section class="panel" id="panel-notes" data-panel="notes" aria-labelledby="notes-heading">
           <h2 id="notes-heading" data-i18n="notesHeading">Detective's notebook</h2>
           <label for="notes" class="muted" data-i18n="notesLabel">Jot down names, times and hunches. Saved automatically in this browser.</label>
-          <textarea id="notes" class="notes" spellcheck="true" rows="14" data-i18n-attr="placeholder:notesPlaceholder"></textarea>
+          <textarea id="notes" class="notes" spellcheck="true" rows="14"></textarea>
           <p class="muted small" id="notes-status" aria-live="polite"></p>
         </section>
 
@@ -127,6 +181,14 @@
 
       <!-- QUERY DESK -->
       <section class="desk panel" id="panel-query" data-panel="query" data-i18n-attr="aria-label:deskLabel" aria-label="Query desk">
+        <div id="task-strip" class="task-strip" hidden>
+          <p class="task-strip-text"><span class="task-strip-label" id="task-strip-label"></span> <span id="task-strip-task"></span></p>
+          <button type="button" class="btn btn-small btn-ghost" id="task-strip-open" data-i18n="viewLesson">Open the lesson</button>
+        </div>
+        <div id="check-banner" class="check-banner" role="status" aria-live="polite" hidden>
+          <p id="check-banner-text"></p>
+          <button type="button" class="btn btn-small btn-primary" id="check-banner-next" data-i18n="nextLesson" hidden>Next lesson →</button>
+        </div>
         <div class="card editor-card">
           <div class="card-head">
             <label for="editor" class="card-title" data-i18n="editorTitle">SQL editor</label>
@@ -173,6 +235,30 @@
           <button type="button" class="btn btn-primary" data-close data-i18n="backToDesk">Back to the desk</button>
         </div>
       </div>
+    </dialog>
+
+    <!-- Level picker -->
+    <dialog id="levels" class="dialog dialog-wide" aria-labelledby="levels-title">
+      <div class="dialog-body">
+        <h2 id="levels-title" data-i18n="levelsTitle">Choose your level</h2>
+        <p class="muted" data-i18n="levelsIntro"></p>
+        <ol id="level-list" class="level-list"></ol>
+        <div class="dialog-actions">
+          <button type="button" class="btn btn-ghost" data-close data-i18n="close">Close</button>
+        </div>
+      </div>
+    </dialog>
+
+    <!-- Reset-database confirmation (writable level) -->
+    <dialog id="confirm-reset-db" class="dialog" aria-labelledby="reset-db-title">
+      <form method="dialog" class="dialog-body">
+        <h2 id="reset-db-title" data-i18n="resetDbTitle">Reset the database?</h2>
+        <p data-i18n="resetDbBody"></p>
+        <div class="dialog-actions">
+          <button type="submit" value="cancel" class="btn btn-ghost" autofocus data-i18n="resetKeep">Keep my progress</button>
+          <button type="submit" value="confirm" class="btn btn-danger" data-i18n="resetDb">Reset database</button>
+        </div>
+      </form>
     </dialog>
 
     <!-- Reset confirmation -->

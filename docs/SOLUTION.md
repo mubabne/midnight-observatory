@@ -1,14 +1,73 @@
-# Developer solution: Midnight at the Observatory
+# Developer solutions (all levels)
 
 > ## ⚠️ SPOILER WARNING
-> This document names the killer and walks through the whole case.
+> This document names every culprit and walks through every level.
 > It is for developers and teachers. **Don't read it if you want to play.**
 
 <br><br><br><br><br><br>
 
 ---
 
-## The answer
+## Level 1 · The Academy
+
+Thirteen guided lessons on one table (`suspects`), each graded automatically. Every model answer is in `src/levels/academy/level.js` and is tested in `tests/levels.test.js`.
+
+**Final exam answer: Rory Calloway.** He is the only suspect who is taller than 180 cm, has red hair, drives something green and has no alibi:
+
+```sql
+SELECT name FROM suspects
+WHERE height_cm > 180 AND hair = 'red' AND vehicle LIKE '%green%' AND alibi IS NULL;
+```
+
+Near misses, one per clue: Bram Hollis (has an alibi), Dmitri Volkov (silver sedan), Kasper Wright (179 cm), Gus Pemberton and Mateo Ruiz (not red-haired), Cleo Marsh (162 cm).
+
+---
+
+## Level 3 · The Millrace Poisonings
+
+**The answer: Margo Ellery**, owner of Ember & Oak Tea Bar, poisoned five customers with thallium in their hot drinks. All five had left her stall a one-star review that complained about the owner.
+
+| Step | Query idea | Result |
+| --- | --- | --- |
+| 1 | `illness_reports WHERE diagnosis = 'thallium poisoning'` | 5 patients (customers 1–5) |
+| 2 | CTE of patients, orders in the 48 h before `onset_at`, `GROUP BY` stall, `HAVING COUNT(DISTINCT customer_id) = 5` | Only Ember & Oak. Copperline served 4 in the window (Fern Ostrova's visit on 10 Sept is outside it). Without the window, Copperline also hits 5. |
+| 3 | `LEAD(started_at) OVER (PARTITION BY staff_id ORDER BY started_at)` turns `station_log` into stints; join the 5 poisoned orders | Margo 5, Dov 5, Ines 4, Theo 4 (Copperline, if the stall filter is missing), Hazel 3, Sunny 2, Pip 1 |
+| 4 | Same, `station = 'drinks'`, `HAVING … = 5` | Margo only. Dov made drinks for 2 of the 5. |
+
+The poisoned orders are `orders` 4, 8, 12, 16 and 20. **Bonus lead:** the people with a one-star Ember & Oak review and no thallium report are Beatrix Coyle and Hugo Varela. Hugo has an allergic-reaction report, so a `LEFT JOIN` that doesn't put the diagnosis in its `ON` clause wrongly drops him, and putting it in `WHERE` returns nothing.
+
+---
+
+## Level 4 · Tampered Evidence
+
+The live database is `seed.sql` plus `tamper.sql`. The backup is `seed.sql` alone, attached as `backup`.
+
+**Who: Gideon Marsh**, through his admin console session from home, 2026-10-22 01:38–01:51 (`admin_sessions` 4). He:
+
+- deleted his own Records Vault scans (`badge_scans` 33 and 35, 22:14 in and 22:52 out on 20 October);
+- moved Nadia Brooks's Reading Room entry (32) into the Records Vault;
+- moved his own exit (37) from 23:05 back to 21:59;
+- forged a vault exit for Nadia (62, 22:44).
+
+Rows 63–67 are honest scans from the next morning. They are not in the backup, so a restore that deletes every row the backup lacks fails the "Restore the evidence" check. Row 47 was a routine console fix made before the backup and appears in both copies.
+
+The intended restore:
+
+```sql
+BEGIN;
+DELETE FROM badge_scans
+WHERE id NOT IN (SELECT id FROM backup.badge_scans) AND modified_at IS NOT NULL;
+INSERT OR REPLACE INTO badge_scans SELECT * FROM backup.badge_scans;
+COMMIT;
+```
+
+The true vault timeline for that night: Felix Adebayo in at 21:30 and out at 21:33, then Gideon Marsh in at 22:14 and out at 22:52.
+
+---
+
+## Level 2 · Midnight at the Observatory
+
+### The answer
 
 **Corin Ashdown** (id 1006, Postdoctoral Researcher, Astrophysics) killed **Dr. Imogen Varga** (id 1001, Senior Astronomer).
 
@@ -16,7 +75,7 @@
 
 **Method.** At 22:55 Corin borrowed a portable spectrograph in a long hard case from the self-service loan lockers. That gave him a reason to carry a big case and somewhere to hide the drive. He looked into the West Dome twice (22:41 and 23:20, when the engineer was there), then went in at 23:38 when Varga was alone. They argued. A volunteer walked in at 23:44 and was sent away. Around 23:48 Corin struck Varga with a brass counterweight, took the drive, and left at 23:51 with the case. He badged onto the Roof Deck at 23:57 and scanned into the meteor watch at 23:58 to build an alibi. He returned the case at 07:58 the next morning with the foam cut out where the drive had been.
 
-## Timeline (Friday 16 to Saturday 17 October 2026)
+### Timeline (Friday 16 to Saturday 17 October 2026)
 
 | Time | Event | Source |
 | --- | --- | --- |
@@ -36,7 +95,7 @@
 | 07:58 | Spectrograph returned with the foam cut out | equipment_loans 16; interview 13 |
 | 10:15 | The department chair reports Varga's drive missing | crime_reports 11 |
 
-## Canonical query path
+### Canonical query path
 
 **1. Find the report.** The starting query returns 3 reports from 17 October.
 
@@ -117,7 +176,7 @@ Expected: exactly one row, **Corin Ashdown**.
 - Wendell Fairbanks (loan desk): a spectrograph came back at 07:58 with foam cut out "like they needed room for something small". The loan table shows that return is Corin's.
 - Sofia Brandt: Varga promised "big news about integrity in science".
 
-## Alternative routes (tested in `tests/mystery.test.js`)
+### Alternative routes (tested in `tests/mystery.test.js`)
 
 **GROUP BY (the bonus lead).** Tomas thought the same badge kept coming back:
 
@@ -144,7 +203,7 @@ WHERE occupation = 'Postdoctoral Researcher' AND department = 'Astrophysics'
 
 Expected: Corin Ashdown.
 
-## Why the answer is unique
+### Why the answer is unique
 
 Three independent filters intersect on one person:
 
@@ -164,6 +223,6 @@ The case doesn't rest on a missing record. Every step uses positive records: bad
 - **Badge logs are complete and accurate to the minute.** The security officer says so in his interview, and the data tests check that every person's in/out scans alternate correctly.
 - **Kiosk check-outs are unreliable.** The events coordinator says so. No conclusion depends on a missing check-out. Corin's meteor-watch check-in is a positive record that contradicts his story.
 
-## Accepted answers
+### Accepted answers
 
 The check ignores case, extra spaces and a leading title such as "Dr.", so `corin ashdown`, `  CORIN   ASHDOWN ` and `Dr. Corin Ashdown` are all accepted. A wrong name from the cast gets a nudge pointing at the evidence that clears that person. A name that isn't in `people` gets a "check the spelling" message, based on a parameterised lookup in the real database.

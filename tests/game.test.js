@@ -3,9 +3,10 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
-import { normalizeName, judgeAccusation, getEnding } from '../src/case/solution.js';
-import { CASES, getCase } from '../src/case/case.js';
-import { Store, STORAGE_KEY, defaultState, WARN } from '../src/state/storage.js';
+import { normalizeName, judgeAccusation, getEnding } from '../src/levels/observatory/solution.js';
+import { CASES, getCase } from '../src/levels/observatory/case.js';
+import { LEVELS, LEVEL_IDS, getLevel, levelContent } from '../src/levels/index.js';
+import { Store, STORAGE_KEY, defaultState, defaultLevelState, WARN, bytesToBase64, base64ToBytes } from '../src/state/storage.js';
 import { SqlClient, TimeoutError } from '../src/sql/client.js';
 import { SQL, bytes } from './helpers.js';
 import { findPersonByName } from '../src/sql/engine.js';
@@ -31,13 +32,6 @@ test('the person lookup is parameterised, not string-built', () => {
   assert.equal(findPersonByName(SQL, bytes, "x' OR '1'='1"), null);
 });
 
-test('the culprit is never named in player-facing case content', () => {
-  const text = JSON.stringify(CASES);
-  assert.ok(!/corin|ashdown|корин|эшдаун/i.test(text), 'case.js mentions the culprit');
-  const html = fs.readFileSync(new URL('../index.html', import.meta.url), 'utf8');
-  assert.ok(!/corin|ashdown/i.test(html), 'index.html mentions the culprit');
-});
-
 test('the ending explains culprit and motive', () => {
   const ending = getEnding('en');
   assert.equal(ending.culprit, 'Corin Ashdown');
@@ -54,6 +48,24 @@ test('hints get more specific: idea first, near-solution query last', () => {
   }
 });
 
+test('no level names its culprit in player-facing text', () => {
+  const culprits = { observatory: /corin|ashdown|корин|эшдаун/i, coldcase: /margo|ellery/i, tampered: /gideon|marsh/i, academy: /rory|calloway/i };
+  for (const [id, pattern] of Object.entries(culprits)) {
+    const level = getLevel(id);
+    const text = JSON.stringify(
+      Object.values(level.content).map((c) => {
+        // Lesson answers and checks are only shown on request, so they may name the answer.
+        const { lessons, ...rest } = c;
+        return [rest, (lessons ?? []).map(({ title, body, task, hint }) => ({ title, body, task, hint }))];
+      })
+    );
+    assert.ok(!pattern.test(text), `${id} level text names the culprit`);
+  }
+  assert.ok(!/corin|ashdown|корин|эшдаун/i.test(JSON.stringify(CASES)), 'case.js mentions the culprit');
+  const html = fs.readFileSync(new URL('../index.html', import.meta.url), 'utf8');
+  assert.ok(!/corin|ashdown|margo|ellery|gideon/i.test(html), 'index.html mentions a culprit');
+});
+
 /* ---------------- storage ---------------- */
 
 class MemoryStorage {
@@ -63,67 +75,116 @@ class MemoryStorage {
   removeItem(k) { delete this.data[k]; }
 }
 
-test('progress round-trips through storage, including the language', () => {
+const starterFor = (id, lang) => levelContent(getLevel(id), lang).startingQuery;
+const makeStore = (storage, extra = {}) => new Store({ starterFor, storage, levelIds: LEVEL_IDS, defaultLevel: 'academy', ...extra });
+
+test('progress round-trips per level, including the language and current level', () => {
   const mem = new MemoryStorage();
-  const a = new Store('SELECT 1;', mem);
-  a.update({ notes: 'custodian saw 23:51', hintsRevealed: 2, solved: true, draft: 'SELECT 2;', lang: 'mn' });
+  const a = makeStore(mem);
+  assert.equal(a.isNew, true);
+  a.update({ level: 'observatory', lang: 'mn' });
+  a.updateLevel({ notes: 'custodian saw 23:51', hintsRevealed: 2, solved: true, draft: 'SELECT 2;' });
   a.addHistory({ sql: 'SELECT 3;', ranAt: '2026-10-17T00:00:00Z', ok: true, summary: 'rows:1' });
-  const b = new Store('SELECT 1;', mem);
-  assert.equal(b.state.notes, 'custodian saw 23:51');
-  assert.equal(b.state.hintsRevealed, 2);
-  assert.equal(b.state.solved, true);
-  assert.equal(b.state.draft, 'SELECT 2;');
+  a.updateLevel({ lessonsDone: ['select-star', 'columns'], lesson: 'where-text' }, 'academy');
+  const b = makeStore(mem);
+  assert.equal(b.isNew, false);
+  assert.equal(b.state.level, 'observatory');
   assert.equal(b.state.lang, 'mn');
-  assert.equal(b.state.history[0].sql, 'SELECT 3;');
+  assert.equal(b.lv.notes, 'custodian saw 23:51');
+  assert.equal(b.lv.hintsRevealed, 2);
+  assert.equal(b.lv.solved, true);
+  assert.equal(b.lv.draft, 'SELECT 2;');
+  assert.equal(b.lv.history[0].sql, 'SELECT 3;');
+  assert.deepEqual(b.levelState('academy').lessonsDone, ['select-star', 'columns']);
+  assert.equal(b.levelState('academy').lesson, 'where-text');
+  assert.equal(b.levelState('coldcase').solved, false, 'unplayed levels start fresh');
   assert.equal(b.warning, null);
 });
 
-test('a fresh game uses the starting query of the default language', () => {
-  const starter = (lang) => getCase(lang).startingQuery;
-  const s = new Store(starter, new MemoryStorage(), 'mn');
+test('a version 1 save becomes the Observatory progress', () => {
+  const v1 = { version: 1, lang: 'mn', draft: 'SELECT 9;', history: [{ sql: 'SELECT 1;', ranAt: 'x', ok: true, summary: 'rows:1' }], notes: 'old notes', hintsRevealed: 3, bonusRevealed: true, solved: true, guesses: ['felix ward'] };
+  const s = makeStore(new MemoryStorage({ [STORAGE_KEY]: JSON.stringify(v1) }));
+  assert.equal(s.state.version, 2);
+  assert.equal(s.state.level, 'observatory');
   assert.equal(s.state.lang, 'mn');
-  assert.equal(s.state.draft, getCase('mn').startingQuery);
+  assert.equal(s.lv.notes, 'old notes');
+  assert.equal(s.lv.solved, true);
+  assert.equal(s.lv.hintsRevealed, 3);
+  assert.deepEqual(s.lv.guesses, ['felix ward']);
+  assert.equal(s.isNew, false);
+});
+
+test('a fresh level uses its own starting query in the current language', () => {
+  const s = makeStore(new MemoryStorage(), { defaultLang: 'mn' });
+  assert.equal(s.state.lang, 'mn');
+  assert.equal(s.state.level, 'academy');
+  assert.equal(s.levelState('observatory').draft, getCase('mn').startingQuery);
+  assert.equal(s.levelState('academy').draft, levelContent(getLevel('academy'), 'en').startingQuery);
 });
 
 test('corrupt saved data falls back to a fresh game with a warning', () => {
   const mem = new MemoryStorage({ [STORAGE_KEY]: '{not json' });
-  const s = new Store('SELECT 1;', mem);
-  assert.deepEqual(s.state, defaultState('SELECT 1;'));
+  const s = makeStore(mem);
+  assert.deepEqual(s.state, defaultState({ lang: 'en', level: 'academy' }));
   assert.equal(s.warning, WARN.damaged);
 });
 
 test('wrongly-typed fields are ignored individually', () => {
   const mem = new MemoryStorage({
-    [STORAGE_KEY]: JSON.stringify({ version: 1, notes: 42, hintsRevealed: 'lots', history: [{ sql: 1 }, { sql: 'ok', ranAt: 'x' }], solved: 'yes', lang: 'klingon' }),
+    [STORAGE_KEY]: JSON.stringify({
+      version: 2,
+      lang: 'klingon',
+      level: 'nowhere',
+      levels: {
+        observatory: { notes: 42, hintsRevealed: 'lots', history: [{ sql: 1 }, { sql: 'ok', ranAt: 'x' }], solved: 'yes' },
+        tampered: { lessonsDone: ['a', 7, 'a', 'b'], snapshot: '<script>' },
+        bogus: { notes: 'ignored' },
+      },
+    }),
   });
-  const s = new Store('SELECT 1;', mem);
-  assert.equal(s.state.notes, '');
-  assert.equal(s.state.hintsRevealed, 0);
-  assert.equal(s.state.solved, false);
+  const s = makeStore(mem);
   assert.equal(s.state.lang, 'en');
-  assert.equal(s.state.history.length, 1);
+  assert.equal(s.state.level, 'academy');
+  const obs = s.levelState('observatory');
+  assert.equal(obs.notes, '');
+  assert.equal(obs.hintsRevealed, 0);
+  assert.equal(obs.solved, false);
+  assert.equal(obs.history.length, 1);
+  assert.deepEqual(s.levelState('tampered').lessonsDone, ['a', 'b']);
+  assert.equal(s.levelState('tampered').snapshot, null);
+  assert.equal(s.state.levels.bogus, undefined);
 });
 
 test('blocked storage still lets the game run in memory', () => {
-  const s = new Store('SELECT 1;', null);
-  s.update({ notes: 'x' });
-  assert.equal(s.state.notes, 'x');
+  const s = makeStore(null);
+  s.updateLevel({ notes: 'x' });
+  assert.equal(s.lv.notes, 'x');
   assert.equal(s.warning, WARN.blocked);
   const throwing = { getItem() { throw new Error('denied'); }, setItem() { throw new Error('denied'); }, removeItem() {} };
-  const t = new Store('SELECT 1;', throwing);
-  t.update({ notes: 'y' });
-  assert.equal(t.state.notes, 'y');
+  const t = makeStore(throwing);
+  t.updateLevel({ notes: 'y' });
+  assert.equal(t.lv.notes, 'y');
   assert.ok(t.warning);
 });
 
-test('reset restores the starting state but keeps the chosen language', () => {
-  const starter = (lang) => getCase(lang).startingQuery;
+test('resetting a level clears only that level and keeps the language', () => {
   const mem = new MemoryStorage();
-  const s = new Store(starter, mem);
-  s.update({ notes: 'n', hintsRevealed: 3, solved: true, draft: 'x', lang: 'mn' });
-  s.reset();
-  assert.deepEqual(s.state, defaultState(getCase('mn').startingQuery, 'mn'));
-  assert.deepEqual(new Store(starter, mem).state, defaultState(getCase('mn').startingQuery, 'mn'));
+  const s = makeStore(mem);
+  s.update({ lang: 'mn', level: 'observatory' });
+  s.updateLevel({ notes: 'n', hintsRevealed: 3, solved: true, draft: 'x' });
+  s.updateLevel({ lessonsDone: ['select-star'] }, 'academy');
+  s.resetLevel();
+  assert.deepEqual(s.lv, defaultLevelState(getCase('mn').startingQuery));
+  const again = makeStore(mem);
+  assert.equal(again.state.lang, 'mn');
+  assert.deepEqual(again.levelState('observatory'), defaultLevelState(getCase('mn').startingQuery));
+  assert.deepEqual(again.levelState('academy').lessonsDone, ['select-star']);
+});
+
+test('database snapshots survive the base64 round trip', () => {
+  const sample = new Uint8Array(70_000).map((_, i) => (i * 31) % 256);
+  assert.deepEqual(base64ToBytes(bytesToBase64(sample)), sample);
+  assert.equal(base64ToBytes('%%%'), null);
 });
 
 /* ---------------- worker timeout and restarts ---------------- */

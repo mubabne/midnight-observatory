@@ -1,10 +1,16 @@
 // Saves progress in localStorage. Every read is validated: if storage is
 // blocked (private mode, disabled cookies) or the saved JSON is damaged,
 // the game falls back to a fresh state and tells the player why.
+//
+// Version 2 keeps one progress record per level:
+//   { version: 2, lang, level, levels: { [levelId]: LevelState } }
+// Version 1 saves (one case only) are migrated into the Observatory level.
 
 export const STORAGE_KEY = 'midnight-observatory/v1';
 export const HISTORY_LIMIT = 50;
 const LANGS = ['en', 'mn'];
+const MAX_SNAPSHOT_CHARS = 6 * 1024 * 1024;
+const V1_LEVEL = 'observatory';
 
 // Warnings are keys into the UI strings, so they show in the current language.
 export const WARN = {
@@ -14,10 +20,8 @@ export const WARN = {
   saveFailed: 'warnSaveFailed',
 };
 
-export function defaultState(startingQuery, lang = 'en') {
+export function defaultLevelState(startingQuery = '') {
   return {
-    version: 1,
-    lang,
     draft: startingQuery,
     history: [],
     notes: '',
@@ -25,17 +29,22 @@ export function defaultState(startingQuery, lang = 'en') {
     bonusRevealed: false,
     solved: false,
     guesses: [],
+    lessonsDone: [],
+    lesson: null,
+    snapshot: null, // base64 database bytes, writable levels only
   };
+}
+
+export function defaultState({ lang = 'en', level = 'academy' } = {}) {
+  return { version: 2, lang, level, levels: {} };
 }
 
 const isString = (v) => typeof v === 'string';
 
-/** Copies only well-formed fields from saved data onto a default state. */
-export function sanitize(raw, startingQuery, lang = 'en') {
-  const base = defaultState(startingQuery, lang);
-  if (!raw || typeof raw !== 'object' || raw.version !== 1) return base;
-
-  if (LANGS.includes(raw.lang)) base.lang = raw.lang;
+/** Copies only well-formed fields from one saved level onto a default level state. */
+export function sanitizeLevel(raw, startingQuery = '') {
+  const base = defaultLevelState(startingQuery);
+  if (!raw || typeof raw !== 'object') return base;
   if (isString(raw.draft)) base.draft = raw.draft;
   if (isString(raw.notes)) base.notes = raw.notes;
   if (Number.isInteger(raw.hintsRevealed) && raw.hintsRevealed >= 0) {
@@ -54,27 +63,39 @@ export function sanitize(raw, startingQuery, lang = 'en') {
         summary: isString(h.summary) ? h.summary : '',
       }));
   }
-  if (Array.isArray(raw.guesses)) {
-    base.guesses = raw.guesses.filter(isString).slice(0, 20);
+  if (Array.isArray(raw.guesses)) base.guesses = raw.guesses.filter(isString).slice(0, 20);
+  if (Array.isArray(raw.lessonsDone)) base.lessonsDone = [...new Set(raw.lessonsDone.filter(isString))].slice(0, 100);
+  if (isString(raw.lesson)) base.lesson = raw.lesson;
+  if (isString(raw.snapshot) && raw.snapshot.length <= MAX_SNAPSHOT_CHARS && /^[A-Za-z0-9+/=]*$/.test(raw.snapshot)) {
+    base.snapshot = raw.snapshot;
   }
   return base;
 }
 
 export class Store {
   /**
-   * startingQuery may be a string or a function of the language, so a fresh
-   * state always gets the starting query in the right language.
+   * starterFor(levelId, lang) returns a level's starting query, so a fresh
+   * level always starts with the right query in the right language.
    */
-  constructor(startingQuery, storage = safeLocalStorage(), defaultLang = 'en') {
-    this.startingQueryFor = typeof startingQuery === 'function' ? startingQuery : () => startingQuery;
+  constructor({
+    starterFor = () => '',
+    storage = safeLocalStorage(),
+    defaultLang = 'en',
+    levelIds = [V1_LEVEL],
+    defaultLevel = levelIds[0],
+  } = {}) {
+    this.starterFor = starterFor;
+    this.levelIds = levelIds;
+    this.defaultLevel = levelIds.includes(defaultLevel) ? defaultLevel : levelIds[0];
     this.defaultLang = LANGS.includes(defaultLang) ? defaultLang : 'en';
     this.storage = storage;
     this.warning = storage ? null : WARN.blocked;
+    this.isNew = true;
     this.state = this.#load();
   }
 
   #fresh(lang = this.defaultLang) {
-    return defaultState(this.startingQueryFor(lang), lang);
+    return defaultState({ lang, level: this.defaultLevel });
   }
 
   #load() {
@@ -89,13 +110,46 @@ export class Store {
     if (text === null) return this.#fresh();
     try {
       const parsed = JSON.parse(text);
-      if (!parsed || parsed.version !== 1) throw new Error('bad version');
-      const lang = LANGS.includes(parsed.lang) ? parsed.lang : this.defaultLang;
-      return sanitize(parsed, this.startingQueryFor(lang), lang);
+      if (!parsed || typeof parsed !== 'object') throw new Error('bad data');
+      const state = this.#sanitize(parsed);
+      this.isNew = false;
+      return state;
     } catch {
       this.warning = WARN.damaged;
       return this.#fresh();
     }
+  }
+
+  #sanitize(raw) {
+    const lang = LANGS.includes(raw.lang) ? raw.lang : this.defaultLang;
+    if (raw.version === 1) {
+      // The original single-case save becomes the Observatory's progress.
+      const state = defaultState({ lang, level: this.levelIds.includes(V1_LEVEL) ? V1_LEVEL : this.defaultLevel });
+      if (this.levelIds.includes(V1_LEVEL)) {
+        state.levels[V1_LEVEL] = sanitizeLevel(raw, this.starterFor(V1_LEVEL, lang));
+      }
+      return state;
+    }
+    if (raw.version !== 2) throw new Error('bad version');
+    const level = this.levelIds.includes(raw.level) ? raw.level : this.defaultLevel;
+    const state = defaultState({ lang, level });
+    if (raw.levels && typeof raw.levels === 'object') {
+      for (const id of this.levelIds) {
+        if (raw.levels[id]) state.levels[id] = sanitizeLevel(raw.levels[id], this.starterFor(id, lang));
+      }
+    }
+    return state;
+  }
+
+  /** Progress for a level (a fresh record if it was never played). */
+  levelState(id = this.state.level) {
+    this.state.levels[id] ??= defaultLevelState(this.starterFor(id, this.state.lang));
+    return this.state.levels[id];
+  }
+
+  /** Progress for the current level. */
+  get lv() {
+    return this.levelState();
   }
 
   save() {
@@ -108,26 +162,47 @@ export class Store {
     }
   }
 
+  /** Changes top-level fields (lang, level). */
   update(changes) {
     Object.assign(this.state, changes);
     this.save();
   }
 
-  addHistory(entry) {
-    const history = [entry, ...this.state.history].slice(0, HISTORY_LIMIT);
-    this.update({ history });
+  /** Changes the current level's progress. */
+  updateLevel(changes, id = this.state.level) {
+    Object.assign(this.levelState(id), changes);
+    this.save();
   }
 
-  /** Clears progress but keeps the chosen language. */
-  reset() {
-    const lang = this.state.lang;
-    try {
-      this.storage?.removeItem(STORAGE_KEY);
-    } catch {
-      /* ignore */
-    }
-    this.state = this.#fresh(lang);
+  addHistory(entry) {
+    const history = [entry, ...this.lv.history].slice(0, HISTORY_LIMIT);
+    this.updateLevel({ history });
+  }
+
+  /** Clears one level's progress; other levels and the language are kept. */
+  resetLevel(id = this.state.level) {
+    this.state.levels[id] = defaultLevelState(this.starterFor(id, this.state.lang));
     this.save();
+  }
+}
+
+export function bytesToBase64(bytes) {
+  let binary = '';
+  const chunk = 0x8000;
+  for (let i = 0; i < bytes.length; i += chunk) {
+    binary += String.fromCharCode.apply(null, bytes.subarray(i, i + chunk));
+  }
+  return btoa(binary);
+}
+
+export function base64ToBytes(text) {
+  try {
+    const binary = atob(text);
+    const bytes = new Uint8Array(binary.length);
+    for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
+    return bytes;
+  } catch {
+    return null;
   }
 }
 

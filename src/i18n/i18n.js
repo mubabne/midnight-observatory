@@ -39,5 +39,5 @@ export function applyStatic(root = document) {
     }
   }
   document.documentElement.lang = t('htmlLang');
-  document.title = t('docTitle');
+  // document.title follows the current level, so main.js sets it.
 }

@@ -15,9 +15,13 @@ export class TimeoutError extends Error {
 }
 
 export class SqlClient {
-  constructor({ timeoutMs = QUERY_TIMEOUT_MS, lang = 'en' } = {}) {
+  constructor({ timeoutMs = QUERY_TIMEOUT_MS, lang = 'en', level = null } = {}) {
     this.timeoutMs = timeoutMs;
     this.lang = lang;
+    this.level = level;
+    // Latest bytes of a writable level's database, so a restart after a
+    // timeout picks up exactly where the player was.
+    this.snapshot = null;
     this.worker = null;
     this.pending = new Map();
     this.nextId = 1;
@@ -25,13 +29,17 @@ export class SqlClient {
   }
 
   /**
-   * Starts (or restarts) the worker and loads the evidence in a language.
-   * Restarts after a timeout reuse the last language.
+   * Starts (or restarts) the worker and loads a level in a language.
+   * start('mn') changes only the language; start({ lang, level, snapshot })
+   * can change all three. Restarts after a timeout reuse the last settings.
    */
-  start(lang = this.lang) {
-    this.lang = lang;
+  start(options = {}) {
+    const opts = typeof options === 'string' ? { lang: options } : options;
+    if (opts.lang !== undefined) this.lang = opts.lang;
+    if (opts.level !== undefined) this.level = opts.level;
+    if (opts.snapshot !== undefined) this.snapshot = opts.snapshot;
     this.#spawn();
-    const ready = this.#send('init', { lang }, INIT_TIMEOUT_MS);
+    const ready = this.#send('init', { lang: this.lang, level: this.level, snapshot: this.snapshot }, INIT_TIMEOUT_MS);
     this.ready = ready;
     // A failed start must not leave a half-working worker around. Only the
     // latest start may do this: an older start that was superseded by a
@@ -42,14 +50,23 @@ export class SqlClient {
     return ready;
   }
 
-  async query(sql) {
+  /** lessonId (optional) asks the worker to grade the run against that lesson. */
+  async query(sql, { lessonId = null } = {}) {
     await this.ready;
-    return this.#send('query', { sql }, this.timeoutMs);
+    return this.#send('query', { sql, lessonId }, this.timeoutMs);
   }
 
   async findPerson(name) {
     await this.ready;
     return this.#send('findPerson', { name }, this.timeoutMs);
+  }
+
+  /** Writable levels: back to the level's starting data. */
+  async resetDb() {
+    await this.ready;
+    const result = await this.#send('resetDb', {}, this.timeoutMs);
+    this.snapshot = null;
+    return result;
   }
 
   #spawn() {
@@ -62,10 +79,17 @@ export class SqlClient {
       this.pending.delete(id);
       clearTimeout(entry.timer);
       if (ok) {
+        if (result?.snapshot) this.snapshot = result.snapshot;
         entry.resolve(result);
       } else {
         const err = new Error(error.message);
         err.detail = error.detail;
+        if (error.snapshot) {
+          this.snapshot = error.snapshot;
+          err.snapshot = error.snapshot;
+          err.schema = error.schema;
+          err.rolledBack = error.rolledBack;
+        }
         entry.reject(err);
       }
     };

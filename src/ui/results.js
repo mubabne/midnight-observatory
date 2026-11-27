@@ -4,9 +4,10 @@ import { MAX_ROWS } from '../sql/engine.js';
 
 const LONG_TEXT = 60;
 
-export function renderIdle(container, { returning = false } = {}) {
+export function renderIdle(container, { returning = false, lesson = false } = {}) {
   container.removeAttribute('aria-busy');
-  container.replaceChildren(el('p', { class: 'empty-state', text: t(returning ? 'idleReturning' : 'idle') }));
+  const key = returning ? 'idleReturning' : lesson ? 'idleLesson' : 'idle';
+  container.replaceChildren(el('p', { class: 'empty-state', text: t(key) }));
 }
 
 export function renderLoading(container) {

@@ -644,6 +644,469 @@ textarea::placeholder {
   font-weight: 600;
 }
 
+/* ---------- Lessons ---------- */
+
+.tab[hidden],
+.task-strip[hidden],
+.check-banner[hidden],
+.db-tools[hidden],
+.lesson-help [hidden],
+#lesson-view[hidden],
+#case-view[hidden] {
+  display: none;
+}
+
+.stamp-training {
+  color: var(--amber-strong);
+}
+
+.lesson-progress {
+  margin: 4px 0 6px;
+  font-family: var(--font-mono);
+  font-size: 0.78rem;
+  color: var(--ink-dim);
+}
+
+.progress-track {
+  height: 6px;
+  margin-bottom: 12px;
+  border-radius: 999px;
+  background: var(--code-bg);
+  border: 1px solid var(--line);
+  overflow: hidden;
+}
+
+.progress-fill {
+  display: block;
+  height: 100%;
+  width: 0;
+  background: var(--amber);
+  transition: width 0.3s;
+}
+
+.lesson {
+  margin-top: 16px;
+  padding: 16px;
+  border: 1px solid var(--line-strong);
+  border-left: 3px solid var(--amber);
+  border-radius: var(--radius-sm);
+  background: var(--panel-2);
+  min-width: 0;
+}
+
+.lesson.is-done {
+  border-left-color: var(--ok);
+}
+
+.lesson h3 {
+  font-size: 1.2rem;
+  margin: 4px 0 10px;
+}
+
+.lesson h3:focus {
+  outline: none;
+}
+
+.lesson-body p,
+.lesson-body ul {
+  font-size: 0.93rem;
+  margin: 0 0 10px;
+}
+
+.lesson-body code,
+.task-box code,
+.lesson-hint code,
+.lesson-note code,
+#lesson-intro code,
+.task-strip code,
+#accuse-help code {
+  font-family: var(--font-mono);
+  font-size: 0.86em;
+  padding: 1px 5px;
+  border-radius: 4px;
+  background: var(--code-bg);
+  border: 1px solid var(--line);
+  color: var(--amber-strong);
+  overflow-wrap: anywhere;
+}
+
+.lesson-list-bullets {
+  padding-left: 1.2em;
+}
+
+.lesson-list-bullets li + li {
+  margin-top: 4px;
+}
+
+.lesson-example {
+  margin: 0 0 12px;
+}
+
+.lesson-example .hint-sql {
+  margin-bottom: 6px;
+}
+
+.lesson-note {
+  margin: 0 0 12px;
+  padding: 10px 12px;
+  font-size: 0.88rem;
+  color: var(--ink-dim);
+  background: var(--code-bg);
+  border: 1px dashed var(--line-strong);
+  border-radius: var(--radius-sm);
+}
+
+.lesson-note.is-quote {
+  font-family: var(--font-serif);
+  font-style: italic;
+  font-size: 1rem;
+  color: var(--ink);
+  border-style: solid;
+  border-left: 3px solid var(--amber-dim);
+}
+
+.lesson-note-label {
+  color: var(--amber-strong);
+}
+
+.task-box {
+  margin: 14px 0 8px;
+  padding: 10px 12px;
+  border-radius: var(--radius-sm);
+  background: var(--amber-wash);
+  border: 1px solid var(--amber-dim);
+}
+
+.task-box h4 {
+  margin: 0 0 4px;
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--amber-strong);
+}
+
+.task-box p {
+  margin: 0;
+}
+
+.lesson-status {
+  min-height: 1.4em;
+  margin: 6px 0;
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: var(--ok);
+}
+
+.lesson-help,
+.lesson-nav,
+.db-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.lesson-hint {
+  margin: 10px 0 0;
+  padding: 8px 10px;
+  font-size: 0.9rem;
+  border-left: 2px solid var(--amber);
+  background: var(--code-bg);
+}
+
+.lesson-hint[hidden],
+#lesson-answer[hidden] {
+  display: none;
+}
+
+#lesson-answer {
+  margin-top: 10px;
+}
+
+.lesson-nav {
+  justify-content: space-between;
+  margin-top: 14px;
+  padding-top: 10px;
+  border-top: 1px dashed var(--line);
+}
+
+.lesson-nav [hidden] {
+  display: none;
+}
+
+.lesson-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: grid;
+  gap: 2px;
+}
+
+.lesson-link {
+  appearance: none;
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  width: 100%;
+  padding: 6px 8px;
+  font: inherit;
+  font-size: 0.9rem;
+  text-align: left;
+  color: var(--ink-dim);
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+}
+
+.lesson-link:hover {
+  background: var(--panel-2);
+  color: var(--ink);
+}
+
+.lesson-link[aria-current] {
+  color: var(--ink);
+  border-color: var(--amber-dim);
+  background: var(--amber-wash);
+}
+
+.lesson-link-num {
+  flex: none;
+  width: 1.6em;
+  font-family: var(--font-mono);
+  font-size: 0.78rem;
+  color: var(--ink-faint);
+  text-align: right;
+}
+
+.lesson-link-title {
+  flex: 1;
+  min-width: 0;
+}
+
+.lesson-link-done {
+  color: var(--ok);
+  font-weight: 700;
+}
+
+.lesson-link.is-done .lesson-link-num {
+  color: var(--ok);
+}
+
+.db-tools {
+  margin: 16px 0;
+  padding: 12px 14px;
+  border: 1px solid var(--line-strong);
+  border-radius: var(--radius-sm);
+  background: var(--panel-2);
+}
+
+.db-tools h3 {
+  margin-bottom: 4px;
+}
+
+.downloads {
+  list-style: none;
+  margin: 8px 0 0;
+  padding: 0;
+  display: grid;
+  gap: 6px;
+}
+
+.downloads:empty {
+  display: none;
+}
+
+.downloads a {
+  display: inline-block;
+  text-decoration: none;
+  overflow-wrap: anywhere;
+}
+
+#lesson-view > h3 {
+  margin-top: 20px;
+}
+
+/* Desk: the current task and the check result sit above the editor. */
+.task-strip {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px 12px;
+  flex-wrap: wrap;
+  padding: 10px 14px;
+  border: 1px solid var(--amber-dim);
+  border-radius: var(--radius);
+  background: var(--amber-wash);
+}
+
+.task-strip-text {
+  margin: 0;
+  min-width: 0;
+  font-size: 0.92rem;
+}
+
+.task-strip-label {
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--amber-strong);
+  margin-right: 4px;
+}
+
+.check-banner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px 12px;
+  flex-wrap: wrap;
+  padding: 10px 14px;
+  border-radius: var(--radius);
+  border: 1px solid var(--line-strong);
+}
+
+.check-banner p {
+  margin: 0;
+  font-weight: 600;
+}
+
+.check-banner.is-pass {
+  border-color: var(--ok);
+  background: var(--ok-wash);
+  color: var(--ok);
+}
+
+.check-banner.is-fail {
+  border-color: var(--danger);
+  background: var(--danger-wash);
+}
+
+.check-banner.is-fail p {
+  color: var(--ink);
+  font-weight: 500;
+}
+
+.check-banner [hidden] {
+  display: none;
+}
+
+/* ---------- Level picker ---------- */
+
+.level-list {
+  list-style: none;
+  padding: 0;
+  margin: 14px 0 0;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 12px;
+}
+
+@media (min-width: 640px) {
+  .level-list {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+.level-card {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 14px;
+  border: 1px solid var(--line-strong);
+  border-radius: var(--radius);
+  background: var(--panel-2);
+  min-width: 0;
+}
+
+.level-card.is-current {
+  border-color: var(--amber);
+  box-shadow: 0 0 0 1px var(--amber-dim) inset;
+}
+
+.level-card h3 {
+  margin: 2px 0 0;
+  font-size: 1.15rem;
+  color: var(--ink);
+}
+
+.level-card .btn {
+  margin-top: auto;
+  align-self: flex-start;
+}
+
+.level-card-head {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 6px 8px;
+}
+
+.level-num {
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--ink-faint);
+}
+
+.level-chip {
+  font-size: 0.72rem;
+  font-weight: 700;
+  padding: 1px 8px;
+  border-radius: 999px;
+  border: 1px solid currentColor;
+}
+
+.level-chip-1 {
+  color: var(--ok);
+}
+
+.level-chip-2 {
+  color: var(--amber-strong);
+}
+
+.level-chip-3 {
+  color: #f0a36b;
+}
+
+.level-chip-4 {
+  color: var(--danger);
+}
+
+.level-status {
+  margin-left: auto;
+}
+
+.level-card.is-done .level-status {
+  color: var(--ok);
+}
+
+.level-summary {
+  margin: 0;
+  font-size: 0.9rem;
+  color: var(--ink-dim);
+}
+
+.skill-list {
+  list-style: none;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin: 2px 0 8px;
+  padding: 0;
+}
+
+.skill-list code {
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  padding: 1px 6px;
+  border-radius: 4px;
+  background: var(--code-bg);
+  border: 1px solid var(--line);
+  color: var(--ink-dim);
+}
+
 /* ---------- Schema ---------- */
 
 .schema-list {
